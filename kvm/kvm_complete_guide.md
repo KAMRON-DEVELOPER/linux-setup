@@ -37,7 +37,7 @@ This guide covers complete setup of KVM (Kernel-based Virtual Machine) virtualiz
 lscpu | grep Virtualization
 
 # 2. Install core packages
-sudo pacman -S qemu-full libvirt virt-manager virt-install bridge-utils
+sudo pacman -S qemu-full qemu-img guestfs-tools libvirt virt-manager virt-install virt-viewer bridge-utils cloud-image-utils edk2-ovmf libosinfo tuned
 
 # 3. Enable libvirt (modular daemons - recommended)
 sudo systemctl enable --now virtqemud.socket virtnetworkd.socket virtstoraged.socket virtproxyd.socket
