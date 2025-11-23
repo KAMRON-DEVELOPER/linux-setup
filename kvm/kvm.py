@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 class VMManager:
     def __init__(self, base_dir: Optional[str] = None) -> None:
-        self.base_dir: Path = Path(base_dir or os.path.expanduser("~/Documents/kvm"))
+        self.base_dir: Path = Path(base_dir or os.path.expanduser("~/.kvm"))
         self.images_dir: Path = self.base_dir / "images"
         self.vms_dir: Path = self.base_dir / "vms"
         self.templates_dir: Path = self.base_dir / "templates"
