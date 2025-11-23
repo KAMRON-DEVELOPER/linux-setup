@@ -1,0 +1,75 @@
+#cloud-config
+preserve_hostname: false
+users:
+  - name: bob
+    groups: ["sudo"]
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh_authorized_keys: ["ssh-ed25519 AAAAC3Nza... your-key-here"]
+ssh_pwauth: true
+disable_root: false
+chpasswd:
+  list: |
+    kamronbek:password
+  expire: false
+
+# Package management
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+packages:
+  - curl
+  - vim
+  - qemu-guest-agent
+
+# Commands to run at the end of the cloud-init process
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent]
+
+# Write files to the instance
+# write_files:
+#   - path: /etc/example_config.conf
+#     content: |
+#       [example-config]
+#       key=value
+#   - path: /etc/motd
+#     content: |
+#       Some text that will appear in your MOTD!
+
+# write_files:
+# - path: / etc / ssh / sshd_config
+#   permissions: 0600
+#   owner: root: root
+#   content: |
+#        Port 12345
+#
+#        HostKey / etc / ssh / ssh_host_rsa_key
+#        HostKey / etc / ssh / ssh_host_ecdsa_key
+#        HostKey / etc / ssh / ssh_host_ed25519_key
+#
+#        SyslogFacility AUTHPRIV
+#
+#        PermitRootLogin No
+#
+#        AuthorizedKeysFile .ssh / authorized_keys
+#
+#        PasswordAuthentication no
+#
+#        ChallengeResponseAuthentication no
+#
+#        GSSAPIAuthentication yes
+#        GSSAPICleanupCredentials no
+#
+#        UsePAM yes
+#
+#        X11 Forwarding yes
+#
+#        AcceptEnv LONG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+#        AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+#        AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+#        AcceptEnv XMODIFIERS
+#
+#        Subsystem sftp / usr / libexec / openssh / sftp server
+
+# Final message, shown after cloud-init completes
+final_message: "VM is ready!"

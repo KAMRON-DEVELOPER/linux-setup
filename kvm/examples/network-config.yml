@@ -1,0 +1,10 @@
+version: 2
+ethernets:
+  enp1s0:
+    dhcp4: true
+    dhcp4-overrides:
+      route-metric: 100
+  eth0:
+    dhcp4: true
+    dhcp4-overrides:
+      route-metric: 200
