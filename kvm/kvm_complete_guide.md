@@ -433,14 +433,14 @@ Alternative method for systemd-based networking.
 
 ```bash
 # 1. Create bridge device
-sudo tee /etc/systemd/network/br0.netdev > /dev/null << EOF
+sudo tee /etc/systemd/network/10-br0.netdev > /dev/null << EOF
 [NetDev]
 Name=br0
 Kind=bridge
 EOF
 
 # 2. Configure bridge network
-sudo tee /etc/systemd/network/br0.network > /dev/null << EOF
+sudo tee /etc/systemd/network/10-br0.network > /dev/null << EOF
 [Match]
 Name=br0
 
@@ -449,7 +449,7 @@ DHCP=yes
 EOF
 
 # 3. Attach Ethernet to bridge
-sudo tee /etc/systemd/network/enp2s0.network > /dev/null << EOF
+sudo tee /etc/systemd/network/20-enp2s0.network > /dev/null << EOF
 [Match]
 Name=enp2s0
 
