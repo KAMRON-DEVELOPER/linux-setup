@@ -1,0 +1,7 @@
+<network>
+  <!-- whatever name you like (vmbridge, lanbridge, host-bridge, nwbridge) -->
+  <name>vmbridge</name>
+  <forward mode='bridge'/>
+  <bridge name='br0'/>
+</network>
+

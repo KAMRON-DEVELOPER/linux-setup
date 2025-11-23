@@ -1,0 +1,45 @@
+[general]
+live_config_reload = true
+# import = ["~/.config/alacritty/colors.toml"]
+# import = ["~/.config/alacritty/themes/themes/gruvbox_dark.toml"]
+# import = ["~/.config/alacritty/themes/themes/gruvbox_material_hard_dark.toml"]
+# import = ["~/.config/alacritty/themes/themes/gruvbox_material_medium_dark.toml"]
+# import = ["~/.config/alacritty/themes/themes/one_light.toml"]
+# import = ["~/.config/alacritty/themes/themes/tokyo_night.toml"]
+# import = ["~/.config/alacritty/themes/themes/catppuccin.toml"]
+# import = ["~/.config/alacritty/themes/themes/ayu_dark.toml"]
+import = ["~/.config/alacritty/themes/themes/github_dark.toml"]
+# import = ["~/.config/alacritty/themes/themes/one_dark.toml"]
+
+[window]
+padding = { x = 0, y = 0 }
+opacity = 0.6
+blur = true
+
+[font]
+# normal = { family = "MesloLGS NF", style = "Regular" }
+normal = { family = "JetBrainsMono Nerd Font", style = "Regular" }
+bold = { family = "JetBrainsMono Nerd Font", style = "Bold" }
+italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
+bold_italic = { family = "JetBrainsMono Nerd Font", style = "Bold Italic" }
+size = 10
+
+
+[selection]
+save_to_clipboard = true
+
+[cursor]
+style = { shape = "Beam", blinking = "On" }
+
+[keyboard]
+bindings = [
+  # Increase font size with Ctrl + =
+  { key = "Equals", mods = "Control", action = "IncreaseFontSize" },
+  # Decrease font size with Ctrl + -
+  { key = "Minus", mods = "Control", action = "DecreaseFontSize" },
+  # Reset font size with Ctrl + 0
+  { key = "Key0", mods = "Control", action = "ResetFontSize" },
+]
+
+[mouse]
+hide_when_typing = true

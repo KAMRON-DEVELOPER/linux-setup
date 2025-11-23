@@ -1,0 +1,47 @@
+@import url("colors.css");
+
+* {
+  min-height: 0;
+  min-width: 0;
+  font-family: "Hack";
+  font-size: 12px;
+}
+
+window#waybar {
+  background: @background;
+  color: @color6;
+  border-bottom: 1px solid @color6;
+}
+
+#workspaces button {
+  color: @color8;
+}
+
+#workspaces button.active {
+  color: @color6;
+  font-weight: 800;
+}
+
+tooltip {
+  background-color: @background;
+  color: @color0;
+  border: 1px solid @color6;
+}
+
+tooltip label {
+  color: @color6;
+}
+
+#cpu,
+#memory,
+#pulseaudio,
+#battery,
+#network {
+  color: @color8;
+  padding-left: 4px;
+}
+
+#tray {
+  margin-left: 4px;
+  margin-right: 6px;
+}

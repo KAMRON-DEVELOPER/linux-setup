@@ -1,0 +1,51 @@
+@import url("file:///home/kamronbek/.config/wofi/colors.css");
+
+* {
+  border: none;
+  border-radius: 0.5em;
+  padding: 0;
+  margin: 0;
+}
+
+window {
+  margin: 0px;
+  border-radius: 0.75em;
+  border: 1px solid @color6;
+  background-color: @background;
+}
+
+#inner-box {
+  margin: 5px;
+  border: none;
+  background-color: @background;
+}
+
+#outer-box {
+  margin: 5px;
+  border: none;
+  background-color: @background;
+}
+
+#input {
+  margin: 5px;
+  border: none;
+  color: @color7;
+  background-color: @background;
+}
+
+#text {
+  margin: 2px;
+  color: @color7;
+}
+
+#text:selected {
+  color: @background;
+}
+
+#entry {
+}
+
+#entry:selected {
+  color: @background;
+  background-color: @color7;
+}
