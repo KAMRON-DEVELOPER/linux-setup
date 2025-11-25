@@ -35,7 +35,7 @@ elif [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh
   source "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh-theme"
 fi
 
-# zsh plugins
+# Zsh plugins
 if [[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
   source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
@@ -44,7 +44,10 @@ if [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; 
   source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
 
-# pyenv
+# Rust
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# Pyenv
 if [[ -d "$HOME/.pyenv" ]]; then
   export PYENV_ROOT="$HOME/.pyenv"
   [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
@@ -54,7 +57,7 @@ if [[ -d "$HOME/.pyenv" ]]; then
   fi
 fi
 
-# nvm node version manager
+# Nvm node version manager
 if [[ -d "$HOME/.config/nvm" ]]; then
   export NVM_DIR="$HOME/.config/nvm"
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -81,14 +84,15 @@ if [[ -d "$HOME/flutter" ]]; then
   export PATH="$PATH":"$HOME/.pub-cache/bin"
 fi
 
-# git add, commit, push
+# Git add, commit, push
 function acp() {
   git add .
   git commit -m "$1"
   git push
 }
 
-# waypaper
+# Env vars
 export XDG_CONFIG_HOME="$HOME/.config"
-
+export XDG_PICTURES_DIR="$HOME/Pictures/Screenshots"
+export HYPRSHOT_DIR="$HOME/Pictures/Screenshots"
 export LIBVIRT_DEFAULT_URI='qemu:///system' 
