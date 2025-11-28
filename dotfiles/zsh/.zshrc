@@ -96,3 +96,5 @@ export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_PICTURES_DIR="$HOME/Pictures/Screenshots"
 export HYPRSHOT_DIR="$HOME/Pictures/Screenshots"
 export LIBVIRT_DEFAULT_URI='qemu:///system' 
+# export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_ADDR='http://vault.poddle.uz:8200'

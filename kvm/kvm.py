@@ -9,15 +9,19 @@ import hashlib
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
+from types import FrameType
 import urllib.request
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
+import yaml
 
 
 class VMManager:
-    def __init__(self, base_dir: Optional[str] = None) -> None:
+    def __init__(self, base_dir: str | None = None) -> None:
         self.base_dir: Path = Path(base_dir or os.path.expanduser("~/.kvm"))
         self.images_dir: Path = self.base_dir / "images"
         self.vms_dir: Path = self.base_dir / "vms"
@@ -33,14 +37,14 @@ class VMManager:
         }
 
         # Track created resources for cleanup
+        self.vm_name: str | None = None
         self.created_resources: list[Path] = []
-        self.vm_name: Optional[str] = None
 
         # Setup signal handlers for cleanup
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-    def _signal_handler(self, signum: int, frame) -> None:
+    def _signal_handler(self, signum: int, frame: FrameType | None) -> None:
         """Handle Ctrl+C and cleanup"""
         print("\n\n⚠️  Interrupted! Cleaning up...")
         self._cleanup()
@@ -162,14 +166,16 @@ class VMManager:
         """Generate user-data YAML"""
         ssh_keys: list[str] = config.get("ssh_keys", [])
 
-        user_data = f"""#cloud-config
-preserve_hostname: false
-hostname: {config['hostname']}
-users:
-  - name: {config['username']}
-    groups: ["sudo"]
-    shell: /bin/bash
-    sudo: ["ALL=(ALL) NOPASSWD:ALL"]"""
+        user_data = f"""
+        #cloud-config
+        preserve_hostname: false
+        hostname: {config["hostname"]}
+        users:
+        - name: {config["username"]}
+            groups: ["sudo"]
+            shell: /bin/bash
+            sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        """
 
         if ssh_keys:
             user_data += "\n    ssh_authorized_keys:\n"
@@ -177,44 +183,100 @@ users:
                 user_data += f"      - {key}\n"
 
         user_data += f"""
+        ssh_pwauth: {str(config.get("ssh_password_auth", True)).lower()}
+        disable_root: false
+        chpasswd:
+        list: |
+            {config["username"]}:{config["password"]}
+        expire: false
 
-ssh_pwauth: {str(config.get('ssh_password_auth', True)).lower()}
-disable_root: false
-chpasswd:
-  list: |
-    {config['username']}:{config['password']}
-  expire: false
+        package_update: true
+        package_upgrade: {str(config.get("auto_upgrade", True)).lower()}
+        package_reboot_if_required: true
+        packages:
+        - curl
+        - vim
+        - qemu-guest-agent
+        - net-tools
 
-package_update: true
-package_upgrade: {str(config.get('auto_upgrade', True)).lower()}
-package_reboot_if_required: true
-packages:
-  - curl
-  - vim
-  - qemu-guest-agent
-  - net-tools
+        runcmd:
+        - [systemctl, enable, --now, qemu-guest-agent]
 
-runcmd:
-  - [systemctl, enable, --now, qemu-guest-agent]
-
-final_message: "VM {config['hostname']} is ready!"
-"""
+        final_message: "VM {config["hostname"]} is ready!"
+        """
         return user_data
 
     def create_meta_data(self, instance_id: str, hostname: str) -> str:
         """Generate meta-data YAML"""
-        return f"""instance-id: {instance_id}
-local-hostname: {hostname}
-"""
+        return f"""
+        instance-id: {instance_id}
+        local-hostname: {hostname}
+        """
+
+    def get_hostname_and_ip(self) -> tuple[str, str]:
+        """Retrieves the hostname & local IP address of the machine."""
+        try:
+            hostname: str = socket.gethostname()
+            ip_address: str = socket.gethostbyname(hostname)
+            return hostname, ip_address
+        except socket.error as e:
+            raise Exception(f"Error getting IP address: {e}")
 
     def create_network_config(self, config: dict[str, Any]) -> str:
         """Generate network-config YAML"""
         interface: str = config.get("network_interface", "enp1s0")
-        return f"""version: 2
-ethernets:
-  {interface}:
-    dhcp4: true
-"""
+
+        data: dict[str, Any] = {
+            "version": 2,
+            "ethernets": {
+                interface: {
+                    "dhcp4": True,
+                }
+            },
+        }
+
+        return yaml.dump(data, sort_keys=False)
+
+    def create_network_config_with_static_dns(
+        self, config: dict[str, Any], static_dns_addr: str
+    ) -> str:
+        """Generate network-config YAML"""
+        dns_servers: list[str] = config.get("dns_servers", [static_dns_addr, "1.1.1.1"])
+
+        data: dict[str, Any] = {
+            "version": 2,
+            "ethernets": {
+                "nic0": {
+                    "match": {"driver": "virtio"},
+                    "set-name": "nic0",
+                    "dhcp4": True,
+                    "dhcp4-overrides": {"use-dns": False},
+                    "nameservers": {"addresses": dns_servers},
+                }
+            },
+        }
+
+        return yaml.dump(data, sort_keys=False)
+
+        # def create_network_config_with_static_dns(self, config: dict[str, Any]) -> str:
+        #     """Generate network-config YAML"""
+        #     interface = config.get("network_interface", "enp1s0")
+        #     dns_servers = config.get("dns_servers", ["192.168.31.247", "1.1.1.1"])
+
+        #     data = {
+        #         "version": 2,
+        #         "ethernets": {
+        #             interface: {
+        #                 "dhcp4": True,
+        #                 "dhcp4-overrides": {
+        #                     "use-dns": False,
+        #                 },
+        #                 "nameservers": {"addresses": dns_servers},
+        #             }
+        #         },
+        #     }
+
+        return yaml.dump(data, sort_keys=False)
 
     def create_cloud_init_iso(self, vm_name: str, config: dict[str, Any]) -> Path:
         """Create cloud-init seed ISO"""
@@ -384,7 +446,7 @@ ethernets:
             key_choice: str = self._prompt("Choice", "1")
 
             ssh_keys: list[str] = []
-            key_path: Optional[Path] = None
+            key_path: Path | None = None
 
             if key_choice == "1":
                 key_path = self.keys_dir / f"{vm_name}_id_ed25519"
