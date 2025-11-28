@@ -106,7 +106,7 @@ class VMManager:
         print("\n📦 Available Cloud Images:")
         for i, (name, _) in enumerate(self.cloud_images.items(), 1):
             downloaded: bool = (self.images_dir / f"{name}.img").exists()
-            status: str = "✓ Downloaded" if downloaded else "⬜ Not downloaded"
+            status: str = "✓ Downloaded" if downloaded else "⚬ Not downloaded"
             print(f"  {i}. {name:20s} {status}")
         return self.cloud_images
 
@@ -132,24 +132,8 @@ class VMManager:
             print(f"❌ Download failed: {e}")
             return False
 
-    def list_ssh_keys(self, ssh_dir: Path) -> list[tuple[str, Path]]:
-        """List available SSH keys in directory"""
-        keys = []
-        if not ssh_dir.exists():
-            return keys
-
-        for pub_key in ssh_dir.glob("*.pub"):
-            key_name = pub_key.stem
-            private_key = ssh_dir / key_name
-            if private_key.exists():
-                keys.append((key_name, private_key))
-        
-        return keys
-
-    def generate_ssh_key(self, key_name: str, key_dir: Path) -> str:
+    def generate_ssh_key(self, key_path: Path) -> str:
         """Generate SSH key pair"""
-        key_path = key_dir / key_name
-        
         if key_path.exists():
             with open(f"{key_path}.pub", "r") as f:
                 return f.read().strip()
@@ -165,7 +149,7 @@ class VMManager:
                 "-N",
                 "",
                 "-C",
-                key_name,
+                "445",
             ],
             check=True,
             capture_output=True,
@@ -179,48 +163,55 @@ class VMManager:
             return f.read().strip()
 
     def create_user_data(self, config: dict[str, Any]) -> str:
-        """Generate user-data using YAML"""
+        """Generate user-data YAML"""
         ssh_keys: list[str] = config.get("ssh_keys", [])
 
-        user_data = {
-            "preserve_hostname": False,
-            "hostname": config["hostname"],
-            "users": [
-                {
-                    "name": config["username"],
-                    "groups": ["sudo"],
-                    "shell": "/bin/bash",
-                    "sudo": ["ALL=(ALL) NOPASSWD:ALL"],
-                }
-            ],
-            "ssh_pwauth": config.get("ssh_password_auth", True),
-            "disable_root": False,
-            "chpasswd": {
-                "list": f"{config['username']}:{config['password']}",
-                "expire": False,
-            },
-            "package_update": True,
-            "package_upgrade": config.get("auto_upgrade", True),
-            "package_reboot_if_required": True,
-            "packages": ["curl", "vim", "qemu-guest-agent", "net-tools"],
-            "runcmd": [
-                ["systemctl", "enable", "--now", "qemu-guest-agent"],
-            ],
-            "final_message": f"VM {config['hostname']} is ready!",
-        }
+        user_data = f"""
+        #cloud-config
+        preserve_hostname: false
+        hostname: {config["hostname"]}
+        users:
+        - name: {config["username"]}
+            groups: ["sudo"]
+            shell: /bin/bash
+            sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        """
 
         if ssh_keys:
-            user_data["users"][0]["ssh_authorized_keys"] = ssh_keys
+            user_data += "\n    ssh_authorized_keys:\n"
+            for key in ssh_keys:
+                user_data += f"      - {key}\n"
 
-        return "#cloud-config\n" + yaml.dump(user_data, default_flow_style=False, sort_keys=False)
+        user_data += f"""
+        ssh_pwauth: {str(config.get("ssh_password_auth", True)).lower()}
+        disable_root: false
+        chpasswd:
+        list: |
+            {config["username"]}:{config["password"]}
+        expire: false
+
+        package_update: true
+        package_upgrade: {str(config.get("auto_upgrade", True)).lower()}
+        package_reboot_if_required: true
+        packages:
+        - curl
+        - vim
+        - qemu-guest-agent
+        - net-tools
+
+        runcmd:
+        - [systemctl, enable, --now, qemu-guest-agent]
+
+        final_message: "VM {config["hostname"]} is ready!"
+        """
+        return user_data
 
     def create_meta_data(self, instance_id: str, hostname: str) -> str:
-        """Generate meta-data using YAML"""
-        meta_data = {
-            "instance-id": instance_id,
-            "local-hostname": hostname,
-        }
-        return yaml.dump(meta_data, default_flow_style=False, sort_keys=False)
+        """Generate meta-data YAML"""
+        return f"""
+        instance-id: {instance_id}
+        local-hostname: {hostname}
+        """
 
     def get_hostname_and_ip(self) -> tuple[str, str]:
         """Retrieves the hostname & local IP address of the machine."""
@@ -232,34 +223,62 @@ class VMManager:
             raise Exception(f"Error getting IP address: {e}")
 
     def create_network_config(self, config: dict[str, Any]) -> str:
-        """Generate network-config YAML with DNS options"""
-        dns_option = config.get("dns_option", "default")
-        
-        network_config = {
+        """Generate network-config YAML"""
+        interface: str = config.get("network_interface", "enp1s0")
+
+        data: dict[str, Any] = {
+            "version": 2,
+            "ethernets": {
+                interface: {7
+                    "dhcp4": True,
+                }
+            },
+        }
+
+        return yaml.dump(data, sort_keys=False)
+
+    def create_network_config_with_static_dns(
+        self, config: dict[str, Any], static_dns_addr: str | None = None
+    ) -> str:
+        """Generate network-config YAML"""
+        dns_servers: list[str] = config.get("dns_servers", ["1.1.1.1"])
+        if static_dns_addr:
+            dns_servers.insert(0, static_dns_addr)
+
+        data: dict[str, Any] = {
             "version": 2,
             "ethernets": {
                 "nic0": {
                     "match": {"driver": "virtio"},
                     "set-name": "nic0",
                     "dhcp4": True,
+                    "dhcp4-overrides": {"use-dns": False},
+                    "nameservers": {"addresses": dns_servers},
                 }
             },
         }
 
-        # Configure DNS based on user choice
-        if dns_option == "host":
-            # Use host machine's DNS
-            _, host_ip = self.get_hostname_and_ip()
-            network_config["ethernets"]["nic0"]["dhcp4-overrides"] = {"use-dns": False}
-            network_config["ethernets"]["nic0"]["nameservers"] = {"addresses": [host_ip, "1.1.1.1"]}
-        elif dns_option == "custom":
-            # Use custom DNS servers
-            dns_servers = config.get("dns_servers", ["1.1.1.1", "8.8.8.8"])
-            network_config["ethernets"]["nic0"]["dhcp4-overrides"] = {"use-dns": False}
-            network_config["ethernets"]["nic0"]["nameservers"] = {"addresses": dns_servers}
-        # else: dns_option == "default" - use DHCP provided DNS (no override)
+        return yaml.dump(data, sort_keys=False)
 
-        return yaml.dump(network_config, default_flow_style=False, sort_keys=False)
+        # def create_network_config_with_static_dns(self, config: dict[str, Any]) -> str:
+        #     """Generate network-config YAML"""
+        #     interface = config.get("network_interface", "enp1s0")
+        #     dns_servers = config.get("dns_servers", ["192.168.31.247", "1.1.1.1"])
+
+        #     data = {
+        #         "version": 2,
+        #         "ethernets": {
+        #             interface: {
+        #                 "dhcp4": True,
+        #                 "dhcp4-overrides": {
+        #                     "use-dns": False,
+        #                 },
+        #                 "nameservers": {"addresses": dns_servers},
+        #             }
+        #         },
+        #     }
+
+        return yaml.dump(data, sort_keys=False)
 
     def create_cloud_init_iso(self, vm_name: str, config: dict[str, Any]) -> Path:
         """Create cloud-init seed ISO"""
@@ -382,7 +401,7 @@ class VMManager:
         try:
             # List and select image
             images: dict[str, str] = self.list_available_images()
-            print("\n🔥 Select base image:")
+            print("\n📥 Select base image:")
 
             default_distro: str = "ubuntu-22.04"
             img_choice: str = self._prompt(
@@ -421,68 +440,25 @@ class VMManager:
             username: str = self._prompt("Username", "ubuntu")
             password: str = self._prompt("Password", "ubuntu")
 
-            # SSH key configuration
+            # SSH key
             print("\n🔑 SSH Key Configuration:")
-            ssh_dir = Path.home() / ".ssh"
-            available_keys = self.list_ssh_keys(ssh_dir)
-            
-            if available_keys:
-                print("  Available SSH keys in ~/.ssh:")
-                for i, (key_name, _) in enumerate(available_keys, 1):
-                    print(f"    {i}. {key_name}")
-                print(f"    {len(available_keys) + 1}. Create new key")
-                print(f"    {len(available_keys) + 2}. Skip SSH key")
-                
-                key_choice: str = self._prompt("Choice", "1")
-            else:
-                print("  No SSH keys found in ~/.ssh")
-                print("    1. Create new key")
-                print("    2. Skip SSH key")
-                key_choice: str = self._prompt("Choice", "1")
+            print("  1. Generate new key")
+            print("  2. Use existing key")
+            print("  3. Skip SSH key")
+            key_choice: str = self._prompt("Choice", "1")
 
             ssh_keys: list[str] = []
             key_path: Path | None = None
 
-            if available_keys and key_choice.isdigit():
-                choice_num = int(key_choice)
-                if 1 <= choice_num <= len(available_keys):
-                    # Use existing key
-                    key_name, key_path = available_keys[choice_num - 1]
-                    with open(f"{key_path}.pub", "r") as f:
-                        ssh_keys = [f.read().strip()]
-                    print(f"✓ Using key: {key_name}")
-                elif choice_num == len(available_keys) + 1:
-                    # Create new key
-                    new_key_name = self._prompt("Key name", f"{vm_name}_id_ed25519")
-                    key_path = ssh_dir / new_key_name
-                    ssh_keys = [self.generate_ssh_key(new_key_name, ssh_dir)]
-                    print(f"✓ Key saved to: {key_path}")
-            elif not available_keys and key_choice == "1":
-                # Create new key
-                new_key_name = self._prompt("Key name", f"{vm_name}_id_ed25519")
-                key_path = ssh_dir / new_key_name
-                ssh_keys = [self.generate_ssh_key(new_key_name, ssh_dir)]
+            if key_choice == "1":
+                key_path = self.keys_dir / f"{vm_name}_id_ed25519"
+                ssh_keys = [self.generate_ssh_key(key_path)]
                 print(f"✓ Key saved to: {key_path}")
-
-            # DNS Configuration
-            print("\n🌐 DNS Configuration:")
-            print("  1. Use DHCP provided DNS (default)")
-            print("  2. Use host machine as DNS server")
-            print("  3. Use custom DNS servers")
-            dns_choice: str = self._prompt("Choice", "1")
-            
-            dns_option = "default"
-            dns_servers = []
-            
-            if dns_choice == "2":
-                dns_option = "host"
-                _, host_ip = self.get_hostname_and_ip()
-                print(f"  ✓ Will use host DNS: {host_ip}")
-            elif dns_choice == "3":
-                dns_option = "custom"
-                dns_input = self._prompt("DNS servers (comma-separated)", "1.1.1.1,8.8.8.8")
-                dns_servers = [ip.strip() for ip in dns_input.split(",")]
-                print(f"  ✓ Will use DNS: {', '.join(dns_servers)}")
+            elif key_choice == "2":
+                default_key: str = "~/.ssh/id_ed25519.pub"
+                key_file: str = self._prompt("Path to public key", default_key)
+                with open(os.path.expanduser(key_file), "r") as f:
+                    ssh_keys = [f.read().strip()]
 
             # Resources
             print("\n⚙️  Resources:")
@@ -511,8 +487,6 @@ class VMManager:
                 "disk_size": disk_size,
                 "network": network,
                 "os_variant": "ubuntu22.04" if "22.04" in distro else "ubuntu20.04",
-                "dns_option": dns_option,
-                "dns_servers": dns_servers,
             }
 
             # Confirm
@@ -524,19 +498,13 @@ class VMManager:
             )
             print(f"  User: {username}")
             print(f"  Network: {network}")
-            if dns_option == "host":
-                print(f"  DNS: Host machine ({host_ip})")
-            elif dns_option == "custom":
-                print(f"  DNS: {', '.join(dns_servers)}")
-            else:
-                print(f"  DNS: DHCP provided")
 
             confirm: str = self._prompt("\n✓ Create VM? [y/N]", "y")
             if confirm.lower() == "y":
                 self.create_vm(config)
                 print(f"\n✅ VM '{vm_name}' created successfully!")
                 print(f"\nConnect with: ssh {username}@<vm-ip>")
-                if key_path:
+                if key_choice == "1" and key_path:
                     print(f"Using key: ssh -i {key_path} {username}@<vm-ip>")
             else:
                 print("❌ Cancelled")
