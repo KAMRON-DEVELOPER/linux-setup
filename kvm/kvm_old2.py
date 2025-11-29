@@ -15,7 +15,7 @@ import sys
 import urllib.request
 from pathlib import Path
 from types import FrameType
-from typing import Any, NoReturn
+from typing import Any
 
 import yaml
 
@@ -44,7 +44,7 @@ class VMManager:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-    def _signal_handler(self, signum: int, frame: FrameType | None) -> NoReturn:
+    def _signal_handler(self, signum: int, frame: FrameType | None) -> None:
         """Handle Ctrl+C and cleanup"""
         print("\n\n⚠️  Interrupted! Cleaning up...")
         self._cleanup()
@@ -56,7 +56,7 @@ class VMManager:
         # Delete VM if it was created
         if self.vm_name:
             try:
-                result: subprocess.CompletedProcess[str] = subprocess.run(
+                result = subprocess.run(
                     ["virsh", "list", "--all", "--name"],
                     capture_output=True,
                     text=True,
@@ -134,13 +134,13 @@ class VMManager:
 
     def list_ssh_keys(self, ssh_dir: Path) -> list[tuple[str, Path]]:
         """List available SSH keys in directory"""
-        keys: list[tuple[str, Path]] = []
+        keys = []
         if not ssh_dir.exists():
             return keys
 
         for pub_key in ssh_dir.glob("*.pub"):
-            key_name: str = pub_key.stem
-            private_key: Path = ssh_dir / key_name
+            key_name = pub_key.stem
+            private_key = ssh_dir / key_name
             if private_key.exists():
                 keys.append((key_name, private_key))
 
@@ -148,7 +148,7 @@ class VMManager:
 
     def generate_ssh_key(self, key_name: str, key_dir: Path) -> str:
         """Generate SSH key pair"""
-        key_path: Path = key_dir / key_name
+        key_path = key_dir / key_name
 
         if key_path.exists():
             with open(f"{key_path}.pub", "r") as f:
@@ -182,7 +182,7 @@ class VMManager:
         """Generate user-data using YAML"""
         ssh_keys: list[str] = config.get("ssh_keys", [])
 
-        user_data: dict[str, Any] = {
+        user_data = {
             "preserve_hostname": False,
             "hostname": config["hostname"],
             "users": [
@@ -218,7 +218,7 @@ class VMManager:
 
     def create_meta_data(self, instance_id: str, hostname: str) -> str:
         """Generate meta-data using YAML"""
-        meta_data: dict[str, Any] = {
+        meta_data = {
             "instance-id": instance_id,
             "local-hostname": hostname,
         }
@@ -235,13 +235,14 @@ class VMManager:
 
     def create_network_config(self, config: dict[str, Any]) -> str:
         """Generate network-config YAML with DNS options"""
-        dns_option: str = config.get("dns_option", "default")
-        interface: str = config.get("network_interface", "enp1s0")
+        dns_option = config.get("dns_option", "default")
 
-        network_config: dict[str, Any] = {
+        network_config = {
             "version": 2,
             "ethernets": {
-                interface: {
+                "nic0": {
+                    "match": {"driver": "virtio"},
+                    "set-name": "nic0",
                     "dhcp4": True,
                 }
             },
@@ -251,19 +252,15 @@ class VMManager:
         if dns_option == "host":
             # Use host machine's DNS
             _, host_ip = self.get_hostname_and_ip()
-            network_config["ethernets"][interface]["dhcp4-overrides"] = {
-                "use-dns": False
-            }
-            network_config["ethernets"][interface]["nameservers"] = {
+            network_config["ethernets"]["nic0"]["dhcp4-overrides"] = {"use-dns": False}
+            network_config["ethernets"]["nic0"]["nameservers"] = {
                 "addresses": [host_ip, "1.1.1.1"]
             }
         elif dns_option == "custom":
             # Use custom DNS servers
-            dns_servers: list[str] = config.get("dns_servers", ["1.1.1.1", "8.8.8.8"])
-            network_config["ethernets"][interface]["dhcp4-overrides"] = {
-                "use-dns": False
-            }
-            network_config["ethernets"][interface]["nameservers"] = {
+            dns_servers = config.get("dns_servers", ["1.1.1.1", "8.8.8.8"])
+            network_config["ethernets"]["nic0"]["dhcp4-overrides"] = {"use-dns": False}
+            network_config["ethernets"]["nic0"]["nameservers"] = {
                 "addresses": dns_servers
             }
         # else: dns_option == "default" - use DHCP provided DNS (no override)
@@ -432,8 +429,8 @@ class VMManager:
 
             # SSH key configuration
             print("\n🔑 SSH Key Configuration:")
-            ssh_dir: Path = Path.home() / ".ssh"
-            available_keys: list[tuple[str, Path]] = self.list_ssh_keys(ssh_dir)
+            ssh_dir = Path.home() / ".ssh"
+            available_keys = self.list_ssh_keys(ssh_dir)
 
             if available_keys:
                 print("  Available SSH keys in ~/.ssh:")
@@ -441,7 +438,7 @@ class VMManager:
                     print(f"    {i}. {key_name}")
                 print(f"    {len(available_keys) + 1}. Create new key")
                 print(f"    {len(available_keys) + 2}. Skip SSH key")
-                default_choice: str = "1"
+                default_choice = "1"
             else:
                 print("  No SSH keys found in ~/.ssh")
                 print("    1. Create new key")
@@ -454,19 +451,16 @@ class VMManager:
             key_path: Path | None = None
 
             if available_keys and key_choice.isdigit():
-                choice_num: int = int(key_choice)
+                choice_num = int(key_choice)
                 if 1 <= choice_num <= len(available_keys):
                     # Use existing key
-                    key_name: str
                     key_name, key_path = available_keys[choice_num - 1]
                     with open(f"{key_path}.pub", "r") as f:
                         ssh_keys = [f.read().strip()]
                     print(f"✓ Using key: {key_name}")
                 elif choice_num == len(available_keys) + 1:
                     # Create new key
-                    new_key_name: str = self._prompt(
-                        "Key name", f"{vm_name}_id_ed25519"
-                    )
+                    new_key_name = self._prompt("Key name", f"{vm_name}_id_ed25519")
                     key_path = ssh_dir / new_key_name
                     ssh_keys = [self.generate_ssh_key(new_key_name, ssh_dir)]
                     print(f"✓ Key saved to: {key_path}")
@@ -477,14 +471,6 @@ class VMManager:
                 ssh_keys = [self.generate_ssh_key(new_key_name, ssh_dir)]
                 print(f"✓ Key saved to: {key_path}")
 
-            # Network interface configuration
-            print("\n🔌 Network Interface:")
-            print("  Common interface names:")
-            print("    - enp1s0 (default for KVM VMs)")
-            print("    - eth0 (older naming)")
-            print("    - ens3 (some configurations)")
-            interface: str = self._prompt("Interface name", "enp1s0")
-
             # DNS Configuration
             print("\n🌐 DNS Configuration:")
             print("  1. Use DHCP provided DNS (default)")
@@ -493,8 +479,8 @@ class VMManager:
             dns_choice: str = self._prompt("Choice", "1")
 
             host_ip: str | None = None
-            dns_option: str = "default"
-            dns_servers: list[str] = []
+            dns_option = "default"
+            dns_servers = []
 
             if dns_choice == "2":
                 dns_option = "host"
@@ -502,7 +488,7 @@ class VMManager:
                 print(f"  ✓ Will use host DNS: {host_ip}")
             elif dns_choice == "3":
                 dns_option = "custom"
-                dns_input: str = self._prompt(
+                dns_input = self._prompt(
                     "DNS servers (comma-separated)", "1.1.1.1,8.8.8.8"
                 )
                 dns_servers = [ip.strip() for ip in dns_input.split(",")]
@@ -515,7 +501,7 @@ class VMManager:
             disk_size: str = self._prompt("Disk size", "20G")
 
             # Network
-            result: subprocess.CompletedProcess[str] = subprocess.run(
+            result = subprocess.run(
                 ["virsh", "net-list", "--all"], capture_output=True, text=True
             )
             print(f"\n🌐 Available networks:\n{result.stdout}")
@@ -534,7 +520,6 @@ class VMManager:
                 "vcpus": int(vcpus_str),
                 "disk_size": disk_size,
                 "network": network,
-                "network_interface": interface,
                 "os_variant": "ubuntu22.04" if "22.04" in distro else "ubuntu20.04",
                 "dns_option": dns_option,
                 "dns_servers": dns_servers,
@@ -549,7 +534,6 @@ class VMManager:
             )
             print(f"  User: {username}")
             print(f"  Network: {network}")
-            print(f"  Interface: {interface}")
             if dns_option == "host" and host_ip:
                 print(f"  DNS: Host machine ({host_ip})")
             elif dns_option == "custom":
@@ -564,12 +548,6 @@ class VMManager:
                 print(f"\nConnect with: ssh {username}@<vm-ip>")
                 if key_path:
                     print(f"Using key: ssh -i {key_path} {username}@<vm-ip>")
-
-                print("\n⏳ Waiting for VM to boot and configure (30-60 seconds)...")
-                print(
-                    "💡 To get VM IP: virsh domifaddr --domain {vm_name} --source agent"
-                )
-                print("💡 Or check DHCP leases on your bridge network")
             else:
                 print("❌ Cancelled")
                 self._cleanup()
@@ -587,9 +565,7 @@ class VMManager:
 
 
 def main() -> None:
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="KVM Cloud-Init VM Manager"
-    )
+    parser = argparse.ArgumentParser(description="KVM Cloud-Init VM Manager")
     parser.add_argument("--base-dir", help="Base directory for VM files")
     parser.add_argument(
         "--setup", action="store_true", help="Setup directory structure"
@@ -599,9 +575,9 @@ def main() -> None:
     )
     parser.add_argument("--download", help="Download specific image")
 
-    args: argparse.Namespace = parser.parse_args()
+    args = parser.parse_args()
 
-    manager: VMManager = VMManager(args.base_dir)
+    manager = VMManager(args.base_dir)
 
     if args.setup:
         manager.setup_directories()
