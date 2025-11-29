@@ -1,1 +1,18 @@
-null
+ports:
+  web:
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    http3:
+      enabled: true
+    advertisedPort: 4443
+    tls:
+      enabled: true
+
+ingressRoute:
+  dashboard:
+    enabled: false

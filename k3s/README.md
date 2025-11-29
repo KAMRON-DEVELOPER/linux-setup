@@ -101,6 +101,10 @@ Step 5: Install Cilium CNI
 
 ## helm install [RELEASE NAME] chart
 
+## add repos
+
+`helm repo add traefik https://traefik.github.io/charts`
+
 ### cilium
 
 `helm install cilium cilium/cilium \
@@ -112,10 +116,39 @@ Step 5: Install Cilium CNI
 
 ### metallb
 
-```helm install metallb metallb/metallb --namespace metallb-system --create-namespace -f metallb-manifests/values.yaml
-# note, you can apply <b>metallb-manifests/config.yaml</b> using `kubectl apply -f metallb-manifests/config.yaml` but with that it lives inside kubernetes not helm(not recommended)```
+#### "In MetalLB v0.13+, configuration is done via Custom Resources (CRs) rather than a single ConfigMap
+
+. When using Helm, you typically define these CRs in a separate YAML file and apply it to the cluster after the MetalLB Helm chart is deployed, or you can pass the configuration directly via the charts.metallb-full.configuration parameter in a values file."
+
+#### You can "<https://metallb.io/configuration/>" or "<https://metallb.io/apis/>", for examples "<https://github.com/metallb/metallb/tree/v0.15.2/configsamples>"(version amy be differ), for usage "<https://metallb.io/usage/>"
+
+Load Balancer test
+
+To test te correct operation of the load balancer we are going to deploy Nginx
+
+#### Create deploy
+
+kubectl create deploy nginx --image=nginx
+
+#### Expose the deploy as a LoadBalancer type
+
+kubectl expose deploy nginx --port=80 --target-port=80 --type=LoadBalancer
+
+#### Verify
+
+kubectl get svc nginx
+NAME    TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)        AGE
+nginx   LoadBalancer   10.43.60.115   192.168.52.30   80:32676/TCP   5h19m
+
+#### Use the curl command we can see the successful response
+
+`curl 192.168.52.30:80`
+
+#### Cleanup
 
 ### traefik
+
+### You can "<https://github.com/traefik/traefik-helm-chart/blob/master/EXAMPLES.md>"
 
 `helm install traefik traefik/traefik --namespace traefik --create-namespace`
 
