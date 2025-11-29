@@ -1,0 +1,10 @@
+grafana:
+  adminPassword: admin
+prometheus:
+  prometheusSpec:
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 10Gi
