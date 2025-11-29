@@ -12,9 +12,9 @@ import signal
 import socket
 import subprocess
 import sys
-from types import FrameType
 import urllib.request
 from pathlib import Path
+from types import FrameType
 from typing import Any
 
 import yaml
@@ -143,13 +143,13 @@ class VMManager:
             private_key = ssh_dir / key_name
             if private_key.exists():
                 keys.append((key_name, private_key))
-        
+
         return keys
 
     def generate_ssh_key(self, key_name: str, key_dir: Path) -> str:
         """Generate SSH key pair"""
         key_path = key_dir / key_name
-        
+
         if key_path.exists():
             with open(f"{key_path}.pub", "r") as f:
                 return f.read().strip()
@@ -212,7 +212,9 @@ class VMManager:
         if ssh_keys:
             user_data["users"][0]["ssh_authorized_keys"] = ssh_keys
 
-        return "#cloud-config\n" + yaml.dump(user_data, default_flow_style=False, sort_keys=False)
+        return "#cloud-config\n" + yaml.dump(
+            user_data, default_flow_style=False, sort_keys=False
+        )
 
     def create_meta_data(self, instance_id: str, hostname: str) -> str:
         """Generate meta-data using YAML"""
@@ -234,7 +236,7 @@ class VMManager:
     def create_network_config(self, config: dict[str, Any]) -> str:
         """Generate network-config YAML with DNS options"""
         dns_option = config.get("dns_option", "default")
-        
+
         network_config = {
             "version": 2,
             "ethernets": {
@@ -251,12 +253,16 @@ class VMManager:
             # Use host machine's DNS
             _, host_ip = self.get_hostname_and_ip()
             network_config["ethernets"]["nic0"]["dhcp4-overrides"] = {"use-dns": False}
-            network_config["ethernets"]["nic0"]["nameservers"] = {"addresses": [host_ip, "1.1.1.1"]}
+            network_config["ethernets"]["nic0"]["nameservers"] = {
+                "addresses": [host_ip, "1.1.1.1"]
+            }
         elif dns_option == "custom":
             # Use custom DNS servers
             dns_servers = config.get("dns_servers", ["1.1.1.1", "8.8.8.8"])
             network_config["ethernets"]["nic0"]["dhcp4-overrides"] = {"use-dns": False}
-            network_config["ethernets"]["nic0"]["nameservers"] = {"addresses": dns_servers}
+            network_config["ethernets"]["nic0"]["nameservers"] = {
+                "addresses": dns_servers
+            }
         # else: dns_option == "default" - use DHCP provided DNS (no override)
 
         return yaml.dump(network_config, default_flow_style=False, sort_keys=False)
@@ -425,20 +431,21 @@ class VMManager:
             print("\n🔑 SSH Key Configuration:")
             ssh_dir = Path.home() / ".ssh"
             available_keys = self.list_ssh_keys(ssh_dir)
-            
+
             if available_keys:
                 print("  Available SSH keys in ~/.ssh:")
                 for i, (key_name, _) in enumerate(available_keys, 1):
                     print(f"    {i}. {key_name}")
                 print(f"    {len(available_keys) + 1}. Create new key")
                 print(f"    {len(available_keys) + 2}. Skip SSH key")
-                
-                key_choice: str = self._prompt("Choice", "1")
+                default_choice = "1"
             else:
                 print("  No SSH keys found in ~/.ssh")
                 print("    1. Create new key")
                 print("    2. Skip SSH key")
-                key_choice: str = self._prompt("Choice", "1")
+                default_choice = "1"
+
+            key_choice: str = self._prompt("Choice", default_choice)
 
             ssh_keys: list[str] = []
             key_path: Path | None = None
@@ -470,17 +477,20 @@ class VMManager:
             print("  2. Use host machine as DNS server")
             print("  3. Use custom DNS servers")
             dns_choice: str = self._prompt("Choice", "1")
-            
+
+            host_ip: str | None = None
             dns_option = "default"
             dns_servers = []
-            
+
             if dns_choice == "2":
                 dns_option = "host"
                 _, host_ip = self.get_hostname_and_ip()
                 print(f"  ✓ Will use host DNS: {host_ip}")
             elif dns_choice == "3":
                 dns_option = "custom"
-                dns_input = self._prompt("DNS servers (comma-separated)", "1.1.1.1,8.8.8.8")
+                dns_input = self._prompt(
+                    "DNS servers (comma-separated)", "1.1.1.1,8.8.8.8"
+                )
                 dns_servers = [ip.strip() for ip in dns_input.split(",")]
                 print(f"  ✓ Will use DNS: {', '.join(dns_servers)}")
 
@@ -524,12 +534,12 @@ class VMManager:
             )
             print(f"  User: {username}")
             print(f"  Network: {network}")
-            if dns_option == "host":
+            if dns_option == "host" and host_ip:
                 print(f"  DNS: Host machine ({host_ip})")
             elif dns_option == "custom":
                 print(f"  DNS: {', '.join(dns_servers)}")
             else:
-                print(f"  DNS: DHCP provided")
+                print("  DNS: DHCP provided")
 
             confirm: str = self._prompt("\n✓ Create VM? [y/N]", "y")
             if confirm.lower() == "y":
