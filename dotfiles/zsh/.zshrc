@@ -99,7 +99,8 @@ export LIBVIRT_DEFAULT_URI='qemu:///system'
 # export VAULT_ADDR='http://127.0.0.1:8200'
 export VAULT_ADDR='http://vault.poddle.uz:8200'
 
-# Load local secrets if available
-if [[ -f "$HOME/.zsh_secrets" ]]; then
-  source "$HOME/.zsh_secrets"
-fi
+# Load local secrets
+[[ -f "$HOME/.zsh_secrets" ]] && source "$HOME/.zsh_secrets"
+# if [[ -f "$HOME/.zsh_secrets" ]]; then
+#   source "$HOME/.zsh_secrets"
+# fi
