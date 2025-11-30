@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: nginx-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP # You can use LoadBalancer since MetalLB will handle and allocate external ip.
   selector:
     app: nginx
   ports:

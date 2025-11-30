@@ -12,7 +12,8 @@ spec:
   tls:
     - hosts:
         - nginx.poddle.uz
-      secretName: nginx-tls-secret
+      # secretName: nginx-tls-secret
+      secretName: wildcard-poddle-uz-secret # Shared wildcard certificate
   rules:
     - host: nginx.poddle.uz
       http:
@@ -21,6 +22,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: nginx
+                name: nginx-service
                 port:
                   number: 80
