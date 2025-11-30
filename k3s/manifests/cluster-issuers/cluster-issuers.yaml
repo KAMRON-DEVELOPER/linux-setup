@@ -1,10 +1,17 @@
+# Self-signed issuer for local development
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-ci
+spec:
+  selfSigned: {}
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: vault-token-ci
 spec:
   vault:
-    # Vault server accessible from K3s nodes and host, not CoreDNS, it doesn't know about dnsmasq
     server: http://192.168.31.247:8200
     path: pki/sign/poddle-uz
     auth:
@@ -27,14 +34,6 @@ spec:
         mountPath: /v1/auth/kubernetes
         serviceAccountRef:
           name: cert-manager
----
-# Self-signed issuer for local development
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned-ci
-spec:
-  selfSigned: {}
 ---
 # Let's Encrypt Staging
 apiVersion: cert-manager.io/v1
