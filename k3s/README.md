@@ -159,3 +159,20 @@ nginx   LoadBalancer   10.43.60.115   192.168.52.30   80:32676/TCP   5h19m
   --create-namespace \
   --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=10Gi \
   --set grafana.adminPassword=admin`
+
+### cert-manager
+
+#### We use self signed certificates for local development by using Vault as a PKI(Private Key Infrastructure) and letsencrypt for staging and production
+
+#### note: "The first thing you'll need to configure after you've installed cert-manager is an Issuer or a ClusterIssuer. These are resources that represent certificate authorities (CAs) able to sign certificates in response to certificate signing requests."
+
+`helm repo add jetstack https://charts.jetstack.io --force-update`
+
+#### # Install the cert-manager helm chart
+
+`helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.19.1 \
+  --set crds.enabled=true`
