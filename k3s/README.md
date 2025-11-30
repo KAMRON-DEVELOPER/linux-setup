@@ -381,42 +381,56 @@ kubectl describe clusterissuer vault-token-ci
 vault auth enable kubernetes
 ```
 
-### 8.2 Configure Kubernetes Auth
+### 8.2 Create Token Reviewer ServiceAccount
+
+Vault needs a ServiceAccount with `system:auth-delegator` permission to verify JWT tokens via the TokenReview API.
+
+```bash
+# Create a ServiceAccount for Vault token review
+kubectl create serviceaccount vault-reviewer -n kube-system
+
+# Bind it to the system:auth-delegator ClusterRole
+kubectl create clusterrolebinding vault-reviewer-binding \
+    --clusterrole=system:auth-delegator \
+    --serviceaccount=kube-system:vault-reviewer
+```
+
+### 8.3 Configure Kubernetes Auth
 
 Get the required values from your cluster:
 
 ```bash
-# Get Kubernetes API server CA
-kubectl get secret -n kube-system -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data['ca\.crt']}" | base64 -d > /tmp/k8s-ca.crt
+# Get Kubernetes CA certificate
+K8S_CA_CERT=$(kubectl config view --raw --minify --flatten \
+    -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d)
 
-# Get the Kubernetes API server address (from inside the cluster)
+# Get the Kubernetes API server address
 K8S_HOST="https://192.168.31.106:6443"
 
-# Get the cert-manager service account JWT
-kubectl create serviceaccount cert-manager -n cert-manager --dry-run=client -o yaml | kubectl apply -f -
-kubectl create token cert-manager -n cert-manager --duration=8760h > /tmp/reviewer-jwt
-```
+# Get token from vault-reviewer SA (has TokenReview permissions)
+REVIEWER_TOKEN=$(kubectl create token vault-reviewer -n kube-system --duration=87600h)
 
-Configure Vault:
-
-```bash
+# Configure Kubernetes auth
 vault write auth/kubernetes/config \
-    kubernetes_host="${K8S_HOST}" \
-    kubernetes_ca_cert=@/tmp/k8s-ca.crt \
-    token_reviewer_jwt=@/tmp/reviewer-jwt
+    kubernetes_host="$K8S_HOST" \
+    kubernetes_ca_cert="$K8S_CA_CERT" \
+    token_reviewer_jwt="$REVIEWER_TOKEN"
 ```
 
-### 8.3 Create Vault Role for cert-manager
+> **IMPORTANT**: The `token_reviewer_jwt` must be from a ServiceAccount with `system:auth-delegator` role.  
+> Using the `cert-manager` SA will cause "permission denied" errors because it can't call the TokenReview API.
+
+### 8.4 Create Vault Role for cert-manager
 
 ```bash
 vault write auth/kubernetes/role/cert-manager \
     bound_service_account_names=cert-manager \
     bound_service_account_namespaces=cert-manager \
     policies=cert-manager \
-    ttl=1h
+    ttl=24h
 ```
 
-### 8.4 Create ClusterIssuer with Kubernetes Auth
+### 8.5 Create ClusterIssuer with Kubernetes Auth
 
 ```bash
 kubectl apply -f manifests/cluster-issuers/vault-ci.yaml

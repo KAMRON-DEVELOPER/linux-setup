@@ -591,13 +591,29 @@ vault auth enable kubernetes
 echo "✅ Kubernetes auth method enabled"
 ```
 
-### Step 2: Configure Kubernetes Auth
+### Step 2: Create Token Reviewer ServiceAccount
+
+Vault needs a ServiceAccount with `system:auth-delegator` permission to verify JWT tokens via the TokenReview API.
+
+```bash
+# Create a ServiceAccount for Vault token review
+kubectl create serviceaccount vault-reviewer -n kube-system
+
+# Bind it to the system:auth-delegator ClusterRole
+kubectl create clusterrolebinding vault-reviewer-binding \
+    --clusterrole=system:auth-delegator \
+    --serviceaccount=kube-system:vault-reviewer
+
+echo "✅ vault-reviewer ServiceAccount created with auth-delegator permissions"
+```
+
+### Step 3: Configure Kubernetes Auth
 
 You need to provide Vault with:
 
 1. Kubernetes API server URL
 2. Kubernetes CA certificate
-3. A JWT token to verify against
+3. A JWT token from the `vault-reviewer` SA (NOT cert-manager SA!)
 
 ```bash
 # Get Kubernetes CA certificate
@@ -607,31 +623,21 @@ K8S_CA_CERT=$(kubectl config view --raw --minify --flatten \
 # Get Kubernetes API server
 K8S_HOST="https://192.168.31.106:6443"
 
-# Get ServiceAccount JWT token
-# First, get the token from the cert-manager ServiceAccount
-TOKEN_NAME=$(kubectl get serviceaccount cert-manager -n cert-manager \
-    -o jsonpath='{.secrets[0].name}' 2>/dev/null)
-
-if [ -z "$TOKEN_NAME" ]; then
-    # For K8s 1.24+, tokens are not automatically created
-    # Create a token manually
-    kubectl create token cert-manager -n cert-manager --duration=8760h > /tmp/sa-token
-    SA_JWT_TOKEN=$(cat /tmp/sa-token)
-else
-    SA_JWT_TOKEN=$(kubectl get secret $TOKEN_NAME -n cert-manager \
-        -o jsonpath='{.data.token}' | base64 -d)
-fi
+# Get token from vault-reviewer SA (has TokenReview permissions)
+REVIEWER_TOKEN=$(kubectl create token vault-reviewer -n kube-system --duration=87600h)
 
 # Configure Kubernetes auth
 vault write auth/kubernetes/config \
     kubernetes_host="$K8S_HOST" \
     kubernetes_ca_cert="$K8S_CA_CERT" \
-    token_reviewer_jwt="$SA_JWT_TOKEN"
+    token_reviewer_jwt="$REVIEWER_TOKEN"
 
 echo "✅ Kubernetes auth configured"
 ```
 
-### Step 3: Create Vault Role for cert-manager
+> **IMPORTANT**: The `token_reviewer_jwt` must be from a ServiceAccount that has `system:auth-delegator` role. The `cert-manager` SA does NOT have this permission - using it will cause "permission denied" errors.
+
+### Step 4: Create Vault Role for cert-manager
 
 ```bash
 # Create role that binds to cert-manager ServiceAccount
@@ -644,7 +650,7 @@ vault write auth/kubernetes/role/cert-manager \
 echo "✅ Vault role 'cert-manager' created for Kubernetes auth"
 ```
 
-### Step 4: Create Kubernetes Auth ClusterIssuer
+### Step 6: Create Kubernetes Auth ClusterIssuer
 
 Add to `manifests/cluster-issuers/cluster-issuers.yaml`:
 
@@ -678,12 +684,12 @@ kubectl get clusterissuer vault-k8s-ci
 
 Expected output:
 
-```
+```text
 NAME            READY   AGE
 vault-k8s-ci    True    10s
 ```
 
-### Step 5: Test Kubernetes Auth
+### Step 8: Test Kubernetes Auth
 
 Create a test certificate using Kubernetes auth:
 
@@ -708,7 +714,7 @@ EOF
 kubectl get certificate test-k8s-auth -w
 ```
 
-### Step 6: Create Wildcard Certificate
+### Step 9: Create Wildcard Certificate
 
 Create `manifests/certificates/wildcard-certificate.yaml`:
 
