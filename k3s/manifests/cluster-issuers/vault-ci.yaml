@@ -4,7 +4,6 @@ metadata:
   name: vault-token-ci
 spec:
   vault:
-    # Vault server accessible from K3s nodes and host, not CoreDNS, it doesn't know about dnsmasq
     server: http://192.168.31.247:8200
     path: pki/sign/poddle-uz
     auth:

@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nginx-certificate
+  namespace: default
+spec:
+  secretName: nginx-tls-secret
+  issuerRef:
+    name: vault-k8s-ci
+    kind: ClusterIssuer
+  commonName: nginx.poddle.uz
+  dnsNames:
+    - nginx.poddle.uz
+  duration: 2160h # 90 days
+  renewBefore: 720h # Renew 30 days before expiry

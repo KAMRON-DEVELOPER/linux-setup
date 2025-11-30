@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: wildcard-poddle-uz-secret
   issuerRef:
-    name: vault-issuer
+    name: vault-k8s-ci
     kind: ClusterIssuer
   commonName: "*.poddle.uz"
   dnsNames:

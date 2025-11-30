@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: nginx-ingress
   annotations:
-    cert-manager.io/cluster-issuer: vault-issuer # Local dev
+    # cert-manager.io/cluster-issuer: vault-k8s-ci # Local dev
     # cert-manager.io/cluster-issuer: letsencrypt-production  # Production
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -12,7 +12,7 @@ spec:
   tls:
     - hosts:
         - nginx.poddle.uz
-      secretName: nginx-tls-cert
+      secretName: nginx-tls-secret
   rules:
     - host: nginx.poddle.uz
       http:
