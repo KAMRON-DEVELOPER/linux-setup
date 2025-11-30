@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: poddle-tls-certificate
+  namespace: default
+spec:
+  secretName: poddle-tls-secret
+  issuerRef:
+    name: vault-issuer
+    kind: ClusterIssuer
+  commonName: "*.poddle.uz"
+  dnsNames:
+    - "*.poddle.uz"
+    - "poddle.uz"
+  duration: 720h # 30 days
+  renewBefore: 168h # Renew 7 days before expiry
