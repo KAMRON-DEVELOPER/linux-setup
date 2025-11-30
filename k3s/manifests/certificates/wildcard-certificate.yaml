@@ -1,10 +1,10 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: poddle-tls-certificate
+  name: wildcard-poddle-uz-certificate
   namespace: default
 spec:
-  secretName: poddle-tls-secret
+  secretName: wildcard-poddle-uz-secret
   issuerRef:
     name: vault-issuer
     kind: ClusterIssuer

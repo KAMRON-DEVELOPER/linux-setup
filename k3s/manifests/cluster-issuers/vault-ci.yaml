@@ -1,0 +1,37 @@
+# Token can expire → all cert issuance stops
+# Token stored in a Secret → less secure
+# Token has wide Vault capabilities (unless very restricted)
+# Revoking/rotating tokens is painful
+# If leaked from a compromised pod → attackers can sign certificates
+# Not ideal for production or multi-tenant environments
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: vault-token-ci
+spec:
+  vault:
+    # Vault server accessible from K3s nodes and host, not CoreDNS, it doesn't know about dnsmasq
+    server: http://192.168.31.247:8200
+    path: pki/sign/poddle-uz
+    auth:
+      tokenSecretRef:
+        name: vault-token
+        key: token
+---
+# Kubernetes auth
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: vault-k8s-ci
+spec:
+  vault:
+    server: http://192.168.31.247:8200
+    path: pki/sign/poddle-uz
+    auth:
+      kubernetes:
+        role: cert-manager
+        mountPath: /v1/auth/kubernetes
+        secretRef:
+          name: cert-manager-vault-sa-token
+          key: token

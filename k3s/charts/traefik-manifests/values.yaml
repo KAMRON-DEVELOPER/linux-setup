@@ -15,4 +15,4 @@ ports:
 
 ingressRoute:
   dashboard:
-    enabled: false
+    enabled: true

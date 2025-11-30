@@ -3,7 +3,8 @@ kind: Ingress
 metadata:
   name: nginx-ingress
   annotations:
-    cert-manager.io/cluster-issuer: vault-issuer
+    cert-manager.io/cluster-issuer: vault-issuer # Local dev
+    # cert-manager.io/cluster-issuer: letsencrypt-production  # Production
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
