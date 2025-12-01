@@ -12,11 +12,9 @@
 6. [Install cert-manager](#6-install-cert-manager)
 7. [Vault PKI Setup (Static Token)](#7-vault-pki-setup-static-token)
 8. [Kubernetes Auth with Vault (Advanced)](#8-kubernetes-auth-with-vault-advanced)
-9. [Vault KV Secrets for Applications](#9-vault-kv-secrets-for-applications)
-10. [Deploy Test Application](#10-deploy-test-application)
-11. [Trust Root CA](#11-trust-root-ca)
-12. [Troubleshooting](#12-troubleshooting)
-13. [Understanding Kubernetes + Vault Auth](#13-understanding-kubernetes--vault-auth)
+9. [Deploy Test Application](#9-deploy-test-application)
+10. [Trust Root CA](#10-trust-root-ca)
+11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
@@ -462,144 +460,9 @@ spec:
 
 ---
 
-## 9. Vault KV Secrets for Applications
+## 9. Deploy Test Application
 
-> This section configures Vault to store application secrets (env vars, API keys, etc.) separately from PKI certificates.
-
-### Understanding PKI vs Secrets
-
-Vault uses ONE Kubernetes auth backend for MULTIPLE purposes:
-
-```
-vault auth enable kubernetes  ← ONE auth backend, MULTIPLE uses
-    │
-    ├─→ Use #1: cert-manager (for PKI/TLS certificates)
-    │      Role: cert-manager
-    │      Purpose: Issue TLS certificates
-    │
-    └─→ Use #2: compute-provisioner (for secrets)
-           Role: compute-provisioner
-           Purpose: Store/retrieve deployment secrets
-```
-
-### 9.1 Enable KV Secrets Engine
-
-```bash
-vault secrets enable -path=kvv2 -version=2 kv
-```
-
-### 9.2 Create Secrets Policy
-
-```bash
-vault policy write vso-policy - <<EOF
-path "kvv2/data/deployments/*" {
-  capabilities = ["read", "create", "update"]
-}
-path "kvv2/metadata/deployments/*" {
-  capabilities = ["list", "read"]
-}
-path "kvv2/delete/deployments/*" {
-  capabilities = ["update"]
-}
-EOF
-```
-
-### 9.3 Create ServiceAccount for Your Application
-
-```bash
-kubectl create serviceaccount compute-provisioner -n poddle-system
-```
-
-### 9.4 Create Vault Role for compute-provisioner
-
-```bash
-vault write auth/kubernetes/role/compute-provisioner \
-    bound_service_account_names=compute-provisioner \
-    bound_service_account_namespaces=poddle-system \
-    policies=vso-policy \
-    ttl=24h
-```
-
-**Parameter Breakdown:**
-
-| Parameter | Value | Purpose |
-|-----------|-------|---------|
-| `bound_service_account_names` | `compute-provisioner` | Only this SA can authenticate |
-| `bound_service_account_namespaces` | `poddle-system` | Only from this namespace |
-| `policies` | `vso-policy` | What secrets can be accessed |
-| `ttl` | `24h` | Token lifetime before re-auth |
-
-### 9.5 Configure Your Application
-
-Your application needs these environment variables:
-
-```yaml
-env:
-  - name: VAULT_ADDRESS
-    value: "http://192.168.31.247:8200"
-  - name: VAULT_AUTH_MOUNT
-    value: "kubernetes"
-  - name: VAULT_AUTH_ROLE
-    value: "compute-provisioner"
-  - name: VAULT_KV_MOUNT
-    value: "kvv2"
-```
-
-The ServiceAccount JWT is automatically mounted at `/var/run/secrets/kubernetes.io/serviceaccount/token`.
-
-### 9.6 Deployment Example
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: compute-provisioner
-  namespace: poddle-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: compute-provisioner
-  template:
-    metadata:
-      labels:
-        app: compute-provisioner
-    spec:
-      serviceAccountName: compute-provisioner  # Important!
-      containers:
-        - name: app
-          image: your-image:latest
-          env:
-            - name: VAULT_ADDRESS
-              value: "http://192.168.31.247:8200"
-            - name: VAULT_AUTH_MOUNT
-              value: "kubernetes"
-            - name: VAULT_AUTH_ROLE
-              value: "compute-provisioner"
-            - name: VAULT_KV_MOUNT
-              value: "kvv2"
-```
-
-### 9.7 Verify Authentication
-
-```bash
-# Test from inside a pod
-kubectl exec -it <pod-name> -n poddle-system -- sh
-
-# Read the SA token
-cat /var/run/secrets/kubernetes.io/serviceaccount/token
-
-# Test Vault login (from your host with the token)
-vault write auth/kubernetes/login \
-    role=compute-provisioner \
-    jwt="$(kubectl create token compute-provisioner -n poddle-system)"
-```
-
----
-
-## 10. Deploy Test Application
-
-### 10.1 Deploy Nginx
+### 9.1 Deploy Nginx
 
 ```bash
 kubectl apply -f example/nginx-deployment.yaml
@@ -693,7 +556,7 @@ spec:
 
 </details>
 
-### 10.2 Verify Certificate
+### 9.2 Verify Certificate
 
 ```bash
 # Watch certificate creation
@@ -708,9 +571,9 @@ curl -k https://nginx.poddle.uz
 
 ---
 
-## 11. Trust Root CA
+## 10. Trust Root CA
 
-### 11.1 Arch Linux System-Wide
+### 10.1 Arch Linux System-Wide
 
 ```bash
 sudo cp ~/poddle-root-ca.crt /etc/ca-certificates/trust-source/anchors/
@@ -720,7 +583,7 @@ sudo update-ca-trust
 trust list | grep -A4 "Poddle Root CA"
 ```
 
-### 11.2 Firefox
+### 10.2 Firefox
 
 ```bash
 # Find Firefox profile
@@ -740,7 +603,7 @@ Now visit `https://nginx.poddle.uz` - you should see a green lock.
 
 ---
 
-## 12. Troubleshooting
+## 11. Troubleshooting
 
 ### Certificate Not Ready
 
@@ -825,99 +688,3 @@ k3s/
 | Check issuers | `kubectl get clusterissuer` |
 | Vault status | `vault status` |
 | Renew token | `vault token renew` |
-
----
-
-## 13. Understanding Kubernetes + Vault Auth
-
-### Authentication Flow
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    YOUR KUBERNETES CLUSTER                      │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │  Pod: compute-provisioner                                │  │
-│  │                                                          │  │
-│  │  ServiceAccount: compute-provisioner                     │  │
-│  │                                                          │  │
-│  │  Auto-mounted JWT at:                                    │  │
-│  │  /var/run/secrets/kubernetes.io/serviceaccount/token     │  │
-│  │                                                          │  │
-│  │  ┌──────────────────────────────┐                        │  │
-│  │  │  Your App reads JWT          │                        │  │
-│  │  │  from that path              │                        │  │
-│  │  └──────────────────────────────┘                        │  │
-│  │                │                                          │  │
-│  └────────────────│──────────────────────────────────────────┘  │
-│                   │                                              │
-│                   ▼ (Sends JWT)                                  │
-│  ┌────────────────────────────────────────────────┐              │
-│  │         Kubernetes API Server                  │◄─────────────┤
-│  │    (Validates tokens via TokenReview)          │              │
-│  └────────────────────────────────────────────────┘              │
-│                   ▲                                              │
-└───────────────────│──────────────────────────────────────────────┘
-                    │
-                    │ (Vault asks K8s: "Is this JWT valid?")
-                    │
-┌───────────────────│──────────────────────────────────────────┐
-│                   │         VAULT (Running on Host)          │
-│                   │                                          │
-│  ┌────────────────▼─────────────────────────────┐            │
-│  │  Kubernetes Auth Backend                     │            │
-│  │  (Configured with vault-reviewer SA)         │            │
-│  └──────────────────────────────────────────────┘            │
-│                   │                                          │
-│                   ▼ (JWT is valid!)                          │
-│  ┌──────────────────────────────────────────────┐            │
-│  │  Issues Vault Token with policies            │            │
-│  │  Policies: vso-policy                        │            │
-│  └──────────────────────────────────────────────┘            │
-│                   │                                          │
-│                   ▼                                          │
-│  ┌──────────────────────────────────────────────┐            │
-│  │  KV Secrets Engine (kvv2)                    │            │
-│  │  Path: kvv2/data/deployments/*               │            │
-│  └──────────────────────────────────────────────┘            │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### What is K8S_CA_CERT?
-
-The `K8S_CA_CERT` is the root certificate that signed your Kubernetes API server's TLS certificate. Vault needs it to verify it's talking to the real K8s API server.
-
-```bash
-K8S_CA_CERT=$(kubectl config view --raw --minify --flatten \
-    -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d)
-```
-
-### Why Two ServiceAccounts?
-
-| ServiceAccount | Purpose | Permissions |
-|----------------|---------|-------------|
-| `vault-reviewer` | Allows Vault to verify JWT tokens | `system:auth-delegator` |
-| `compute-provisioner` | Identity for your app | None (just identity) |
-
-**vault-reviewer** is used by Vault itself to call the Kubernetes TokenReview API. It's like giving Vault a master key to check IDs.
-
-**compute-provisioner** is the identity your application uses. When your app sends its JWT to Vault, Vault uses the vault-reviewer credentials to ask Kubernetes "Is this JWT valid?"
-
-### Step-by-Step Auth Flow
-
-1. **Pod starts** with ServiceAccount `compute-provisioner`
-2. **Kubernetes injects** JWT at `/var/run/secrets/kubernetes.io/serviceaccount/token`
-3. **Your app reads** that JWT file
-4. **App sends JWT to Vault** at `/v1/auth/kubernetes/login` with role name: `compute-provisioner`
-5. **Vault asks Kubernetes**: "Is this JWT valid?" (using vault-reviewer SA)
-6. **Kubernetes responds**: "Yes, it's valid for SA=compute-provisioner, namespace=poddle-system"
-7. **Vault checks role**: Does it match `bound_service_account_names` and `bound_service_account_namespaces`?
-8. **Vault issues token** with `vso-policy` attached
-9. **Your app uses Vault token** to read/write secrets at `kvv2/data/deployments/*`
-
-### ClusterIssuer Comparison
-
-| Issuer | Auth Method | Security | Use Case |
-|--------|-------------|----------|----------|
-| `vault-token-ci` | Static token | ⚠️ Token expires in 24h | Quick setup, development |
-| `vault-k8s-ci` | ServiceAccount JWT | ✅ Auto-rotated | Production, recommended |
