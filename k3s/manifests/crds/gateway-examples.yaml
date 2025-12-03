@@ -1,0 +1,60 @@
+###
+--- # HTTPRoute for subdomain using wildcard listener
+###
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: app-on-subdomain
+  namespace: user-namespace-3
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure-wildcard # Uses wildcard listener
+  hostnames:
+    - myapp.poddle.uz
+  rules:
+    - backendRefs:
+        - name: service
+          port: 80
+
+###
+--- # HTTPRoute for custom domain using custom listener
+###
+# 1. cert-manager creates the Secret
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: custom-cert
+  namespace: user-namespace
+spec:
+  secretName: custom-domain-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - custom.com
+---
+# 2. HTTPRoute with annotation
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: custom-app
+  namespace: user-namespace
+  annotations:
+    # Tell Gateway to use this specific cert for this route
+    traefik.io/tls-secret-name: custom-domain-tls
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  hostnames:
+    - custom.com
+  rules:
+    - backendRefs:
+        - name: service
+          port: 80
+  tls:
+    certificateRefs:
+      - kind: Secret
+        name: custom-domain-tls

@@ -1,4 +1,15 @@
-apiVersion: traefik.containo.us/v1alpha1
+# manifests/ingresses/prometheus-ingress.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-auth
+  namespace: monitoring
+type: kubernetes.io/basic-auth
+stringData:
+  username: admin
+  password: "1213"
+---
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: prometheus-auth
@@ -7,31 +18,59 @@ spec:
   basicAuth:
     secret: prometheus-auth
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: prometheus
   namespace: monitoring
-  annotations:
-    # cert-manager.io/cluster-issuer: "vault-k8s-ci"
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.middlewares: monitoring-prometheus-auth@kubernetescrd
 spec:
-  ingressClassName: traefik
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`prometheus.poddle.uz`)
+      kind: Rule
+      services:
+        - name: prometheus-kube-prometheus-prometheus
+          port: 9090
+      middlewares:
+        - name: prometheus-auth
   tls:
-    - hosts:
-        - prometheus.poddle.uz
-      # secretName: prometheus-tls
-      secretName: wildcard-poddle-uz-secret
-  rules:
-    - host: prometheus.poddle.uz
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: prometheus-kube-prometheus-prometheus
-                port:
-                  number: 9090
+    secretName: wildcard-poddle-uz-tls
+---
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: prometheus-auth
+#   namespace: monitoring
+# spec:
+#   basicAuth:
+#     secret: prometheus-auth
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: prometheus
+#   namespace: monitoring
+#   annotations:
+#     # cert-manager.io/cluster-issuer: "vault-k8s-ci"
+#     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+#     traefik.ingress.kubernetes.io/router.tls: "true"
+#     traefik.ingress.kubernetes.io/router.middlewares: monitoring-prometheus-auth@kubernetescrd
+# spec:
+#   ingressClassName: traefik
+#   tls:
+#     - hosts:
+#         - prometheus.poddle.uz
+#       # secretName: prometheus-tls
+#       secretName: wildcard-poddle-uz-tls
+#   rules:
+#     - host: prometheus.poddle.uz
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: prometheus-kube-prometheus-prometheus
+#                 port:
+#                   number: 9090

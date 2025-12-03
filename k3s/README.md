@@ -220,6 +220,21 @@ helm repo update
 helm install traefik traefik/traefik \
   --namespace traefik \
   --create-namespace
+
+# or `https://doc.traefik.io/traefik/getting-started/quick-start-with-kubernetes/`
+helm install traefik traefik/traefik --wait \
+  --set ingressRoute.dashboard.enabled=true \
+  --set ingressRoute.dashboard.matchRule='Host(`traefik.poddle.uz`)' \
+  --set ingressRoute.dashboard.entryPoints={web} \
+  --set providers.kubernetesGateway.enabled=true \
+  --set gateway.listeners.web.namespacePolicy.from=All \
+  --namespace traefik \
+  --create-namespace
+
+# or with vaules.yaml
+helm install traefik traefik/traefik \
+  --namespace traefik \
+  --values values.yaml
 ```
 
 Verify Traefik got an external IP:
@@ -242,6 +257,16 @@ helm install cert-manager jetstack/cert-manager \
   --create-namespace \
   --version v1.19.1 \
   --set crds.enabled=true
+
+# or
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm upgrade --install \
+cert-manager jetstack/cert-manager \
+--namespace cert-manager \
+--create-namespace \
+--version v1.15.1 \
+--set crds.enabled=true \
+--set "extraArgs={--enable-gateway-api}"
 ```
 
 Verify:

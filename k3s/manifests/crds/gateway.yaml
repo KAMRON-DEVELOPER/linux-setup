@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: traefik-gateway
+  namespace: traefik
+spec:
+  gatewayClassName: traefik
+  listeners:
+    # HTTP listener
+    - name: web
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
+
+    # HTTPS with wildcard cert for *.poddle.uz
+    - name: websecure-wildcard
+      protocol: HTTPS
+      port: 443
+      hostname: "*.poddle.uz" # Only match poddle.uz subdomains
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-poddle-uz-tls
+            kind: Secret
+
+    # HTTPS for custom domains (uses SNI, no default cert)
+    - name: websecure-custom
+      protocol: HTTPS
+      port: 443
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        # No default cert - requires route-specific certs

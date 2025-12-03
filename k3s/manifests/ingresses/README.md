@@ -109,9 +109,9 @@ rm -f traefik-auth prometheus-auth grafana-auth
 Apply all ingress configurations:
 
 ```bash
-kubectl apply -f traefik-dashboard-ingress.yaml
-kubectl apply -f prometheus-ingress.yaml
-kubectl apply -f grafana-ingress.yaml
+kubectl apply -f manifests/ingresses/traefik-dashboard-ingress.yaml
+kubectl apply -f manifests/ingresses/prometheus-ingress.yaml
+kubectl apply -f manifests/ingresses/grafana-ingress.yaml
 ```
 
 ### 3. Verify Deployment

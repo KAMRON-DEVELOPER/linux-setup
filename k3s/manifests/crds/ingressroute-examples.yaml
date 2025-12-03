@@ -1,0 +1,71 @@
+###
+--- # User App with Subdomain (Uses Wildcard)
+###
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: user-app-subdomain
+  namespace: user-namespace
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`myapp.poddle.uz`)
+      kind: Rule
+      services:
+        - name: user-service
+          port: 80
+  tls: {} # Uses TLSStore default (wildcard-poddle-uz-tls)
+###
+--- # User App with Custom Domain (cert-manager)
+###
+# 1. Certificate resource (auto-creates Secret)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: custom-domain-cert
+  namespace: user-namespace
+spec:
+  secretName: custom-domain-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - custom-domain.com
+---
+# 2. IngressRoute referencing the Secret
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: user-app-custom
+  namespace: user-namespace
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`custom-domain.com`)
+      kind: Rule
+      services:
+        - name: user-service
+          port: 80
+  tls:
+    secretName: custom-domain-tls # Reference cert-manager Secret
+###
+--- # User App with Custom Domain (Traefik certResolver)
+###
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: user-app-custom
+  namespace: user-namespace
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`custom-domain.com`)
+      kind: Rule
+      services:
+        - name: user-service
+          port: 80
+  tls:
+    certResolver: letsencrypt # Traefik gets cert automatically
