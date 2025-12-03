@@ -1,4 +1,3 @@
-# manifests/ingresses/grafana-ingress.yaml
 apiVersion: v1
 kind: Secret
 metadata:

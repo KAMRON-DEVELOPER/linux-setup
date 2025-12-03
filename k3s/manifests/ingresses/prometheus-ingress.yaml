@@ -1,4 +1,9 @@
-# manifests/ingresses/prometheus-ingress.yaml
+# Test the ingress (with correct spelling and auth)
+# curl -u admin:1213 https://prometheus.poddle.uz/-/healthy
+
+# Or test a simple query
+# curl -u admin:1213 'https://prometheus.poddle.uz/api/v1/query?query=up'
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -32,8 +37,8 @@ spec:
       services:
         - name: prometheus-kube-prometheus-prometheus
           port: 9090
-      middlewares:
-        - name: prometheus-auth
+      # middlewares:
+      #   - name: prometheus-auth
   tls:
     secretName: wildcard-poddle-uz-tls
 ---
