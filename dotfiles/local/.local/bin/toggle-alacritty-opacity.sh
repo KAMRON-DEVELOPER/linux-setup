@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Alacritty config file location
-CONFIG_FILE="$HOME/.config/alacritty/alacritty.toml"
+CONFIG_FILE="$HOME/Documents/linux-setup/dotfiles/config/.config/alacritty/alacritty.toml"
 
 # Check if config file exists
 if [[ ! -f "$CONFIG_FILE" ]]; then
