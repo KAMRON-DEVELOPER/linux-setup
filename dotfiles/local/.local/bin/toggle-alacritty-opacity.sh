@@ -1,23 +1,22 @@
 #!/bin/bash
 
-# Alacritty config file location
-CONFIG_FILE="$HOME/Documents/linux-setup/dotfiles/config/.config/alacritty/alacritty.toml"
+# Define the volatile config file
+OPACITY_FILE="$HOME/.config/alacritty/opacity.toml"
 
-# Check if config file exists
-if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "Error: Alacritty config not found at $CONFIG_FILE"
-    exit 1
+# Default opacity if file doesn't exist yet
+current_opacity="1.0"
+
+# Read current opacity if file exists
+if [[ -f "$OPACITY_FILE" ]]; then
+    # Extract only the number
+    val=$(grep -oP '(?<=opacity = )[0-9.]+' "$OPACITY_FILE" 2>/dev/null)
+    if [[ -n "$val" ]]; then
+        current_opacity="$val"
+    fi
 fi
 
-# Get current opacity value
-current_opacity=$(grep -oP '(?<=opacity = )[0-9.]+' "$CONFIG_FILE" 2>/dev/null)
-
-# If no opacity found, default to 1.0
-if [[ -z "$current_opacity" ]]; then
-    current_opacity="1.0"
-fi
-
-# Determine next opacity value (cycle through 0.6, 0.8, 1.0)
+# Determine next opacity value (cycle: 1.0 -> 0.6 -> 0.8 -> 1.0)
+# Using bc for floating point comparison
 if (( $(echo "$current_opacity <= 0.6" | bc -l) )); then
     new_opacity="0.8"
 elif (( $(echo "$current_opacity <= 0.8" | bc -l) )); then
@@ -26,24 +25,12 @@ else
     new_opacity="0.6"
 fi
 
-# Update the opacity in the config file
-if grep -q "opacity = " "$CONFIG_FILE"; then
-    # Opacity line exists, replace it
-    sed -i "s/opacity = [0-9.]*/opacity = $new_opacity/" "$CONFIG_FILE"
-else
-    # Opacity line doesn't exist, add it under [window] section
-    if grep -q "^\[window\]" "$CONFIG_FILE"; then
-        # [window] section exists, add opacity after it
-        sed -i "/^\[window\]/a opacity = $new_opacity" "$CONFIG_FILE"
-    else
-        # No [window] section, create it
-        echo -e "\n[window]\nopacity = $new_opacity" >> "$CONFIG_FILE"
-    fi
-fi
+# Write the new opacity to the separate file
+# We overwrite the whole file to ensure clean TOML syntax
+echo "[window]" > "$OPACITY_FILE"
+echo "opacity = $new_opacity" >> "$OPACITY_FILE"
 
-# Send notification (optional, requires dunst or similar)
+# Send notification
 if command -v notify-send &> /dev/null; then
-    notify-send "Alacritty Opacity" "Changed to $new_opacity" -t 1000
+    notify-send "Alacritty Opacity" "Changed to $new_opacity" -t 1000 -h string:x-canonical-private-synchronous:alacritty-opacity
 fi
-
-echo "Alacritty opacity changed to $new_opacity"
