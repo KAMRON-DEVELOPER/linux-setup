@@ -8,6 +8,7 @@ spec:
   issuerRef:
     name: vault-k8s-ci
     kind: ClusterIssuer
+    group: cert-manager.io
   commonName: "*.poddle.uz"
   dnsNames:
     - "*.poddle.uz"

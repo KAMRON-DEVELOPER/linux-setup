@@ -1,0 +1,6 @@
+{
+  "yaml.schemas": {
+    "file:///home/kamronbek/.vscode/extensions/continue.continue-1.2.11-linux-x64/config-yaml-schema.json": [".continue/**/*.yaml"],
+    "kubernetes://schema/apps/v1@deployment": "file:///home/kamronbek/Documents/linux-setup/k3s/example/nginx-deployment.yaml"
+  }
+}

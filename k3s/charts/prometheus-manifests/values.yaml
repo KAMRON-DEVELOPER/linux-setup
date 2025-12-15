@@ -11,5 +11,5 @@ prometheus:
 
 kube-state-metrics:
   metricLabelsAllowlist:
-    - pods=[managed-by,deployment-id]
-    - deployments=[managed-by,deployment-id]
+    - pods=[managed-by,project-id,deployment-id]
+    - deployments=[managed-by,project-id,deployment-id]
