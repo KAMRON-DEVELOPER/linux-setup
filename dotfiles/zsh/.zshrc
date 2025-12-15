@@ -95,7 +95,9 @@ function acp() {
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_PICTURES_DIR="$HOME/Pictures/Screenshots"
 export HYPRSHOT_DIR="$HOME/Pictures/Screenshots"
-export LIBVIRT_DEFAULT_URI='qemu:///system' 
+export LIBVIRT_DEFAULT_URI='qemu:///system'
+export EDITOR=nvim
+export VISUAL=nvim
 export KUBE_EDITOR="nvim"
 export VAULT_ADDR='http://vault.poddle.uz:8200'
 
