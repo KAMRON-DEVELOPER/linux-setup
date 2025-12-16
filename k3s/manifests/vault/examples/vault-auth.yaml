@@ -6,7 +6,7 @@ metadata:
   namespace: user-n2232kn234jk34335
 spec:
   method: kubernetes
-  mount: kvv2
+  mount: kubernetes
   kubernetes:
     role: tenant-role
     serviceAccount: default
