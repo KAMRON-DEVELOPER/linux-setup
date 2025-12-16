@@ -6,7 +6,6 @@ metadata:
 spec:
   address: http://192.168.31.247:8200
   skipTLSVerify: true
----
 # apiVersion: secrets.hashicorp.com/v1beta1
 # kind: VaultAuth
 # metadata:
@@ -19,7 +18,6 @@ spec:
 #     role: compute-provisioner
 #     serviceAccount: compute-provisioner
 #   vaultConnectionRef: vault-connection
----
 # apiVersion: secrets.hashicorp.com/v1beta1
 # kind: VaultStaticSecret
 # metadata:
