@@ -1,0 +1,13 @@
+# kubectl create ns user-n2232kn234jk34335 && kubectl apply -f vault-connection.yaml
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: vault-connection
+  namespace: vault-secrets-operator
+spec:
+  address: http://192.168.31.247:8200
+  skipTLSVerify: true
+  # caCertSecretRef:
+  # headers:
+  # timeout:
+  # tlsServerName:

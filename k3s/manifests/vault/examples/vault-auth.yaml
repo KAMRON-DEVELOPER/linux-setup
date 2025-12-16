@@ -1,0 +1,13 @@
+# kubectl create ns user-n2232kn234jk34335 && kubectl apply -f vault-auth.yaml
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: vault-auth
+  namespace: user-n2232kn234jk34335
+spec:
+  method: kubernetes
+  mount: kvv2
+  kubernetes:
+    role: tenant-role
+    serviceAccount: default
+  vaultConnectionRef: vault-connection
