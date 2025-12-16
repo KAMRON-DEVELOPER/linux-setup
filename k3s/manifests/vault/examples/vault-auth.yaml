@@ -1,4 +1,4 @@
-# kubectl create ns user-n2232kn234jk34335 && kubectl apply -f vault-auth.yaml
+# kubectl create ns user-n2232kn234jk34335 && kubectl apply -f k3s/manifests/vault/examples/vault-auth.yaml
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
