@@ -1,60 +1,28 @@
 loki:
-  auth_enabled: false
-
+  enabled: true
+  isDefault: false
   commonConfig:
     replication_factor: 1
-
   storage:
     type: "filesystem"
-    filesystem:
-      chunks_directory: /var/loki/chunks
-      rules_directory: /var/loki/rules
+  deploymentMode: SingleBinary
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      size: 10Gi
 
-  schemaConfig:
-    configs:
-      - from: 2024-01-01
-        store: tsdb
-        object_store: filesystem
-        schema: v13
-        index:
-          prefix: index_
-          period: 24h
+promtail:
+  enabled: true
+  config:
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
 
-# Single binary mode for development/small deployments
-deploymentMode: SingleBinary
-
-singleBinary:
-  replicas: 1
-  persistence:
-    enabled: true
-    size: 10Gi
-
-  resources:
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 200m
-      memory: 512Mi
-
-# Disable unnecessary components
-read:
-  replicas: 0
-write:
-  replicas: 0
-backend:
-  replicas: 0
-
-# Gateway
-gateway:
+grafana:
   enabled: false
-
-# Monitoring
-monitoring:
-  selfMonitoring:
-    enabled: false
-    grafanaAgent:
-      installOperator: false
-
-test:
+prometheus:
+  enabled: false
+fluent-bit:
+  enabled: false
+filebeat:
   enabled: false

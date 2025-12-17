@@ -3,50 +3,91 @@ kind: IngressRoute
 metadata:
   name: tempo-ingress
   namespace: monitoring
+  labels:
+    app: tempo
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(\`tempo.yourdomain.com\`)
+    - match: Host(`tempo.poddle.uz`)
       kind: Rule
       services:
         - name: tempo
           port: 3100
   tls:
-    secretName: wildcard-cert-secret
-
+    secretName: wildcard-poddle-uz-tls
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: loki-stack-ingress
+  name: loki-ingress
   namespace: monitoring
+  labels:
+    app: loki
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(\`loki.yourdomain.com\`)
+    - match: Host(`loki.poddle.uz`)
       kind: Rule
       services:
-        - name: loki-stack
+        - name: loki
           port: 3100
   tls:
-    secretName: wildcard-cert-secret
-
+    secretName: wildcard-poddle-uz-tls
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: opentelemetry-collector-ingress
+  name: opentelemetry-collector-http-ingress
   namespace: monitoring
+  labels:
+    app: opentelemetry-collector
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(\`otel.yourdomain.com\`)
+    - match: Host(`otel.poddle.uz`)
       kind: Rule
       services:
         - name: opentelemetry-collector
           port: 4318
   tls:
-    secretName: wildcard-cert-secret
+    secretName: wildcard-poddle-uz-tls
+# ---
+# apiVersion: traefik.io/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: opentelemetry-collector-grpc-ingress
+#   namespace: monitoring
+#   labels:
+#     app: opentelemetry-collector
+# spec:
+#   entryPoints:
+#     - websecure
+#   routes:
+#     - match: Host(`otel-grpc.poddle.uz`)
+#       kind: Rule
+#       services:
+#         - name: opentelemetry-collector
+#           port: 4317
+#           scheme: h2c # HTTP/2 Cleartext for gRPC
+#   tls:
+#     secretName: wildcard-poddle-uz-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: otel-collector-grpc
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: monitoring
+      sectionName: websecure
+  hostnames:
+    - otel-grpc.poddle.uz
+  rules:
+    - backendRefs:
+        - name: opentelemetry-collector
+          port: 4317

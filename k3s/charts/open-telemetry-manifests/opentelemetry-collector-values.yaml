@@ -1,6 +1,10 @@
 mode: deployment
 
-namespaceOverride: "monitoring" # monitoring | observability
+namespaceOverride: "monitoring"
+
+service:
+  # type: ClusterIP
+  type: LoadBalancer
 
 image:
   repository: otel/opentelemetry-collector-contrib
@@ -8,93 +12,22 @@ image:
 replicaCount: 1
 
 presets:
-  # Configures the collector to collect logs.
-  # Adds the filelog receiver to the logs pipeline
-  # and adds the necessary volumes and volume mounts.
-  # Best used with mode = daemonset.
-  # See https://opentelemetry.io/docs/kubernetes/collector/components/#filelog-receiver for details on the receiver.
   logsCollection:
     enabled: false
-    includeCollectorLogs: false
-    # Enabling this writes checkpoints in /var/lib/otelcol/ host directory.
-    # Note this changes collector's user to root, so that it can write to host directory.
-    storeCheckpoints: false
-    # The maximum bytes size of the recombined field.
-    # Once the size exceeds the limit, all received entries of the source will be combined and flushed.
-    maxRecombineLogSize: 102400
-  # Configures the collector to collect host metrics.
-  # Adds the hostmetrics receiver to the metrics pipeline
-  # and adds the necessary volumes and volume mounts.
-  # Best used with mode = daemonset.
-  # See https://opentelemetry.io/docs/kubernetes/collector/components/#host-metrics-receiver for details on the receiver.
   hostMetrics:
     enabled: false
-  # Configures the Kubernetes Processor to add Kubernetes metadata.
-  # Adds the k8sattributes processor to all the pipelines
-  # and adds a preset of minimum required RBAC rules to ClusterRole.
-  # Best used with mode = daemonset.
-  # See https://opentelemetry.io/docs/kubernetes/collector/components/#kubernetes-attributes-processor for details on the receiver.
   kubernetesAttributes:
-    enabled: false
-    # When enabled the processor will extract all labels for an associated pod and add them as resource attributes.
-    # The label's exact name will be the key.
+    enabled: true
     extractAllPodLabels: false
-    # When enabled the processor will extract all annotations for an associated pod and add them as resource attributes.
-    # The annotation's exact name will be the key.
     extractAllPodAnnotations: false
-  # Configures the collector to collect node, pod, and container metrics from the API server on a kubelet.
-  # Adds the kubeletstats receiver to the metrics pipeline
-  # and adds the necessary rules to ClusterRole.
-  # Best used with mode = daemonset.
-  # See https://opentelemetry.io/docs/kubernetes/collector/components/#kubeletstats-receiver for details on the receiver.
   kubeletMetrics:
     enabled: false
-  # Configures the collector to collect kubernetes events.
-  # Adds the k8sobjects receiver to the logs pipeline
-  # and collects kubernetes events by default.
-  # Best used with mode = deployment or statefulset.
-  # See https://opentelemetry.io/docs/kubernetes/collector/components/#kubernetes-objects-receiver for details on the receiver.
   kubernetesEvents:
     enabled: false
-  # Configures the Kubernetes Cluster Receiver to collect cluster-level metrics.
-  # Adds the k8s_cluster receiver to the metrics pipeline
-  # and adds the necessary rules to ClusterRole.
-  # Can be used with mode = deployment, statefulset, or daemonset.
-  # When used as a daemonset, a leader election is setup to prevent duplication
-  # See https://opentelemetry.io/docs/kubernetes/collector/components/#kubernetes-cluster-receiver for details on the receiver.
   clusterMetrics:
     enabled: false
-    # When enabled with mode = daemonset, leader election is setup to prevent telemetry duplication.
-    # disableLeaderElection: false
-
-  # Configures the collector to collect logs and metrics from pods with specific annotations.
-  # This preset can not be used together with the `logsCollection` preset.
-  # Adds the receiver_creator receiver to the logs and metrics pipelines
-  # and adds the necessary rules to ClusterRole.
-  # Best used with mode = daemonset.
-  # See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/receivercreator/README.md#generate-receiver-configurations-from-provided-hints for details on the receiver.
-  annotationDiscovery:
-    logs:
-      enabled: false
-    metrics:
-      enabled: false
 
 config:
-  service:
-    pipelines:
-      logs:
-        receivers: [otlp]
-        processors: [memory_limiter, k8sattributes, resource, batch]
-        exporters: [loki, debug]
-      metrics:
-        receivers: [otlp, prometheus]
-        processors: [memory_limiter, k8sattributes, resource, batch]
-        exporters: [prometheusremotewrite]
-      traces:
-        receivers: [otlp]
-        processors: [memory_limiter, k8sattributes, resource, batch]
-        exporters: [tempo, debug]
-
   receivers:
     otlp:
       protocols:
@@ -107,6 +40,16 @@ config:
     batch:
       timeout: 10s
       send_batch_size: 1024
+
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: true
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.namespace.name
 
     memory_limiter:
       check_interval: 5s
@@ -122,71 +65,39 @@ config:
           value: "production"
           action: upsert
 
-    k8sattributes:
-      auth_type: "serviceAccount"
-      passthrough: false
-      extract:
-        metadata:
-          - k8s.namespace.name
-          - k8s.deployment.name
-          - k8s.pod.name
-          - k8s.pod.uid
-          - k8s.node.name
-        labels:
-          - tag_name: app
-            key: app
-            from: pod
-          - tag_name: project_id
-            key: project-id
-            from: pod
-          - tag_name: deployment_id
-            key: deployment-id
-            from: pod
-
   exporters:
-    otlp:
+    otlp/tempo:
       endpoint: tempo.monitoring.svc.cluster.local:4317
       tls:
         insecure: true
 
-    prometheusremotewrite:
-      endpoint: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
-      tls:
-        insecure: true
-
-    loki:
+    otlphttp/loki:
       endpoint: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
       tls:
         insecure: true
 
     debug:
-      verbosity: detailed
+      verbosity: basic
 
-    prometheus:
-      config:
-        scrape_configs:
-          - job_name: "kubernetes-pods"
-            kubernetes_sd_configs:
-              - role: pod
-            relabel_configs:
-              - source_labels:
-                  [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-                action: keep
-                regex: true
-              - source_labels:
-                  [__meta_kubernetes_pod_annotation_prometheus_io_path]
-                action: replace
-                target_label: __metrics_path__
-                regex: (.+)
-              - source_labels:
-                  [
-                    __address__,
-                    __meta_kubernetes_pod_annotation_prometheus_io_port,
-                  ]
-                action: replace
-                regex: ([^:]+)(?::\d+)?;(\d+)
-                replacement: \$1:\$2
-                target_label: __address__
+    # prometheusremotewrite:
+    #   endpoint: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+    #   tls:
+    #     insecure: true
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [otlp/tempo, debug]
+      logs:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [otlphttp/loki, debug]
+      metrics:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [debug]
 
 serviceAccount:
   create: true
@@ -202,9 +113,6 @@ clusterRole:
       resources: ["deployments", "replicasets"]
       verbs: ["get", "list", "watch"]
 
-service:
-  type: ClusterIP
-
 ports:
   otlp:
     enabled: true
@@ -216,7 +124,7 @@ ports:
     containerPort: 4318
     servicePort: 4318
     protocol: TCP
-  prometheus:
+  metrics:
     enabled: true
     containerPort: 8888
     servicePort: 8888
