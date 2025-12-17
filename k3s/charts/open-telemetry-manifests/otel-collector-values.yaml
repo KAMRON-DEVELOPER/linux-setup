@@ -72,7 +72,7 @@ config:
         insecure: true
 
     loki:
-      endpoint: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+      endpoint: http://loki-stack.monitoring.svc.cluster.local:3100/loki/api/v1/push
       tls:
         insecure: true
 
