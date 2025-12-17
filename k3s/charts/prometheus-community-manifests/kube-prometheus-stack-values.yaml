@@ -1,6 +1,14 @@
 grafana:
   adminPassword: admin
 
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki-stack.monitoring.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+      editable: true
+
 prometheus:
   prometheusSpec:
     storageSpec:
