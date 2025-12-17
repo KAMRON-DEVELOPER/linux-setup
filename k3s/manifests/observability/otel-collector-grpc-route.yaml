@@ -12,5 +12,5 @@ spec:
     - otel-grpc.poddle.uz
   rules:
     - backendRefs:
-        - name: opentelemetry-collector
+        - name: otel-collector-opentelemetry-collector
           port: 4317
