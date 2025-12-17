@@ -1,0 +1,52 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tempo-ingress
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(\`tempo.yourdomain.com\`)
+      kind: Rule
+      services:
+        - name: tempo
+          port: 3100
+  tls:
+    secretName: wildcard-cert-secret
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: loki-stack-ingress
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(\`loki.yourdomain.com\`)
+      kind: Rule
+      services:
+        - name: loki-stack
+          port: 3100
+  tls:
+    secretName: wildcard-cert-secret
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: opentelemetry-collector-ingress
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(\`otel.yourdomain.com\`)
+      kind: Rule
+      services:
+        - name: opentelemetry-collector
+          port: 4318
+  tls:
+    secretName: wildcard-cert-secret
