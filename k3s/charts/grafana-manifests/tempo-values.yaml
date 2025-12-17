@@ -11,11 +11,11 @@ tempo:
     enabled: true
     remoteWriteUrl: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
 
-storage:
-  trace:
-    backend: local
-    local:
-      path: /var/tempo/traces
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
 
 persistence:
   enabled: true
