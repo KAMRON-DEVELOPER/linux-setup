@@ -71,8 +71,8 @@ config:
       tls:
         insecure: true
 
-    loki:
-      endpoint: http://loki-stack.monitoring.svc.cluster.local:3100/loki/api/v1/push
+    otlphttp/loki:
+      endpoint: http://loki-stack.monitoring.svc.cluster.local:3100/otlp
       tls:
         insecure: true
 
@@ -93,7 +93,7 @@ config:
       logs:
         receivers: [otlp]
         processors: [k8sattributes, batch, resource]
-        exporters: [loki, debug]
+        exporters: [otlphttp/loki, debug]
       metrics:
         receivers: [otlp]
         processors: [k8sattributes, batch, resource]
