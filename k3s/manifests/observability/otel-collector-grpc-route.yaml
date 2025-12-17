@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: otel-collector-grpc-route
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: monitoring
+      sectionName: websecure
+  hostnames:
+    - otel-grpc.poddle.uz
+  rules:
+    - backendRefs:
+        - name: opentelemetry-collector
+          port: 4317
