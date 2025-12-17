@@ -79,25 +79,25 @@ config:
     debug:
       verbosity: basic
 
-    # prometheusremotewrite:
-    #   endpoint: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
-    #   tls:
-    #     insecure: true
+    prometheusremotewrite:
+      endpoint: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+      tls:
+        insecure: true
 
   service:
     pipelines:
       traces:
         receivers: [otlp]
-        processors: [batch]
+        processors: [k8sattributes, batch, resource]
         exporters: [otlp/tempo, debug]
       logs:
         receivers: [otlp]
-        processors: [batch]
+        processors: [k8sattributes, batch, resource]
         exporters: [loki, debug]
       metrics:
         receivers: [otlp]
-        processors: [batch]
-        exporters: [debug]
+        processors: [k8sattributes, batch, resource]
+        exporters: [prometheusremotewrite, debug]
 
 serviceAccount:
   create: true
@@ -131,12 +131,12 @@ ports:
     protocol: TCP
 
 resources:
-  limits:
-    cpu: 1000m
-    memory: 2Gi
   requests:
     cpu: 200m
     memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
 
 autoscaling:
   enabled: false
