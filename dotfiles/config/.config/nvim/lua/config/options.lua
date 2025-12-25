@@ -57,3 +57,23 @@ opt.backspace = "indent,eol,start"
 if vim.g.neovide then
 	vim.g.neovide_scale_factor = 0.7
 end
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = {
+		"lua",
+		"python",
+		"rust",
+		"go",
+		"zig",
+		"dart",
+		"dockerfile",
+		"gitignore",
+		"json",
+		"yaml",
+		"toml",
+		"vim",
+	},
+	callback = function()
+		vim.treesitter.start()
+	end,
+})

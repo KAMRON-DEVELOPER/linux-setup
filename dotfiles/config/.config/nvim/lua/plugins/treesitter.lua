@@ -4,9 +4,7 @@ return {
   build = ":TSUpdate",
 
   config = function()
-    local treesitter = require("nvim-treesitter.configs")
-
-    treesitter.setup({
+    require('nvim-treesitter').setup({
       auto_install = true,
       highlight = { enable = true, additional_vim_regex_highlighting = false },
       indent = { enable = true },
@@ -16,6 +14,7 @@ return {
         "python",
         "rust",
         "go",
+        "zig",
         "dart",
         "dockerfile",
         "gitignore",
@@ -34,6 +33,22 @@ return {
           node_decremental = "<BS>",
         },
       },
+    })
+
+    -- Install parsers
+    require('nvim-treesitter').install({
+      "lua",
+      "python",
+      "rust",
+      "go",
+      "zig",
+      "dart",
+      "dockerfile",
+      "gitignore",
+      "json",
+      "yaml",
+      "toml",
+      "vim"
     })
   end,
 }
