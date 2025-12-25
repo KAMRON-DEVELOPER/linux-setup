@@ -1,20 +1,28 @@
-android-studio
-cloud-hypervisor
-cloud-hypervisor-debug
+apache-tools
+apache-tools-debug
+bombardier
 docker-credential-pass
-google-chrome
-google-cloud-cli
 headlamp-bin
-hyprsysteminfo
-makepasswd
-natscli
-natscli-debug
-postman-bin
+nautilus-open-any-terminal
 python-imageio-ffmpeg
 python-screeninfo
-sublime-text-4
 visual-studio-code-bin
 visual-studio-code-insiders-bin
+wallust
+wallust-debug
 waypaper
+windsurf
 yay-bin
-yp-tools
+yay-bin-debug
+zen-browser-bin
+zsh-theme-powerlevel10k-git
+zsh-theme-powerlevel10k-git-debug
+hyprsysteminfo
+makepasswd
+postman-bin
+# android-studio
+# cloud-hypervisor
+# google-chrome
+# google-cloud-cli
+# natscli
+# sublime-text-4
