@@ -25,7 +25,7 @@ defaultVaultConnection:
 
   # SkipTLSVerify for TLS connections.
   # @type: boolean
-  skipTLSVerify: false
+  skipTLSVerify: true
 
   # Headers to be included in all Vault requests.
   # headers:

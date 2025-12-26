@@ -480,7 +480,8 @@ sudo nano /etc/dnsmasq.conf
 ```conf
 # Bind to localhost and bridge
 port=53
-listen-address=127.0.0.1
+# listen-address=127.0.0.1 # Don't do that, it only listen to localhost, eventually VM's can't reach to host dns server
+listen-address=192.168.31.53
 interface=br0
 
 # Don't forward queries for non-routed addresses
@@ -513,6 +514,7 @@ sudo nano /etc/dnsmasq.d/local-domains.conf
 ```conf
 # Resolve *.poddle.uz to your k3s-server VM
 address=/.poddle.uz/192.168.31.207
+address=/vault.poddle.uz/192.168.31.53
 
 # Additional domains
 address=/.dev.local/192.168.31.207
@@ -618,6 +620,7 @@ sudo systemctl enable --now virtqemud.socket virtnetworkd.socket \
 - `virtnetworkd` - Virtual networks (NAT, bridge)
 - `virtstoraged` - Storage pools and volumes
 - `virtproxyd` - Compatibility layer (makes tools work)
+
 </details>
 
 <details>
@@ -822,10 +825,21 @@ The `kvm.py` script automates the entire VM creation process with cloud-init.
 ```
 
 ### Usage Example
+>
+> don't forget to install PyYAML. ```~ ❯ pip install PyYAML```
 
 ```bash
 cd ~/Documents/kvm
 python kvm.py
+```
+
+> or add this to ```~/.zshrc```
+
+```bash
+# KVM tools
+if [[ -d "$HOME/Documents/linux-setup/kvm" ]]; then
+  export PATH="$HOME/Documents/linux-setup/kvm:$PATH"
+fi
 ```
 
 **Interactive prompts:**
