@@ -1,7 +1,5 @@
 # Vault Static Secret Examples
 
-This directory contains examples for using HashiCorp Vault with Kubernetes to manage secrets.
-
 ## Prerequisites
 
 - Vault server running and accessible
@@ -9,7 +7,32 @@ This directory contains examples for using HashiCorp Vault with Kubernetes to ma
 - `kubectl` configured to access your cluster
 - `vault` CLI installed and configured
 
-## Setup Steps
+## Install Vault Secrets Operator using Helm
+
+```bash
+helm repo add hashicorp https://helm.releases.hashicorp.com
+helm repo update
+
+helm install vault-secrets-operator hashicorp/vault-secrets-operator
+
+# or
+
+helm install vault-secrets-operator hashicorp/vault-secrets-operator \
+    -n vault-secrets-operator \
+    --create-namespace \
+    --values k3s/charts/vault-secrets-operator-manifests/vso-values.yaml
+```
+
+```bash
+~/Documents/linux-setup master !5 ?1 ❯ kubectl get pods -n vault-secrets-operator
+NAME                                                         READY   STATUS    RESTARTS   AGE
+vault-secrets-operator-controller-manager-645c4f6b6d-jpkrz   2/2     Running   0          85s
+~/Documents/linux-setup master !5 ?1 ❯
+```
+
+---
+
+## Test
 
 ### 1. Create Namespace
 
@@ -22,7 +45,7 @@ kubectl create ns user-n2232kn234jk34335
 Apply the VaultConnection resource to configure how to connect to your Vault instance:
 
 ```bash
-kubectl apply -f vault-connection.yaml
+kubectl apply -f k3s/manifests/vault/examples/vault-connection.yaml
 ```
 
 Verify the connection:
@@ -36,7 +59,7 @@ kubectl get vaultconnection -n user-n2232kn234jk34335
 Apply the VaultAuth resource to set up Kubernetes authentication:
 
 ```bash
-kubectl apply -f vault-auth.yaml
+kubectl apply -f k3s/manifests/vault/examples/vault-auth.yaml
 ```
 
 Verify the auth configuration:
@@ -66,7 +89,7 @@ vault kv get kvv2/user-n2232kn234jk34335/deployments/ae72517d-4a1b-463a-ac04-a18
 Apply the VaultStaticSecret resource to sync the Vault secret to Kubernetes:
 
 ```bash
-kubectl apply -f vault-static-secret.yaml
+kubectl apply -f k3s/manifests/vault/examples/vault-static-secret.yaml
 ```
 
 ## Testing
@@ -163,9 +186,9 @@ kubectl get serviceaccount default -n user-n2232kn234jk34335
 Remove all resources:
 
 ```bash
-kubectl delete -f vault-static-secret.yaml
-kubectl delete -f vault-auth.yaml
-kubectl delete -f vault-connection.yaml
+kubectl delete -f k3s/manifests/vault/examples/vault-static-secret.yaml
+kubectl delete -f k3s/manifests/vault/examples/vault-auth.yaml
+kubectl delete -f k3s/manifests/vault/examples/vault-connection.yaml
 kubectl delete ns user-n2232kn234jk34335
 ```
 

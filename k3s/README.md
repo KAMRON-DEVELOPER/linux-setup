@@ -138,13 +138,25 @@ helm install cilium cilium/cilium \
   --set k8sServicePort=6443 \
   --set ipam.mode=kubernetes \
   --set kubeProxyReplacement=true
+
+# or
+
+helm install cilium cilium/cilium \                                                           
+  --namespace kube-system \
+  --set k8sServiceHost=192.168.31.146 \
+  --set k8sServicePort=6443 \
+  --set ipam.mode=kubernetes \
+  --set kubeProxyReplacement=true \
+  --values k3s/charts/cilium-manifests/cilium-values.yaml
 ```
 
 Wait for Cilium to be ready:
 
+> Don't forget to install cilium-cli. On arch ```sudo pacman -S cilium-cli```
+
 ```bash
 kubectl -n kube-system rollout status deployment/cilium-operator
-cilium status --wait
+cilium-cli status --wait
 ```
 
 Verify nodes are now Ready:
@@ -165,6 +177,13 @@ helm repo update
 helm install metallb metallb/metallb \
   --namespace metallb-system \
   --create-namespace
+
+# or
+
+helm install metallb metallb/metallb \                                                      
+  --namespace metallb-system \
+  --create-namespace \
+  --values k3s/charts/metallb-manifests/metallb-values.yaml
 ```
 
 Wait for MetalLB pods:
@@ -176,7 +195,7 @@ kubectl -n metallb-system rollout status deployment/metallb-controller
 Apply IP pool configuration:
 
 ```bash
-kubectl apply -f charts/metallb-manifests/config.yaml
+kubectl apply -f k3s/charts/metallb-manifests/config.yaml
 ```
 
 <details>
@@ -231,10 +250,10 @@ helm install traefik traefik/traefik --wait \
   --namespace traefik \
   --create-namespace
 
-# or with vaules.yaml
-helm install traefik traefik/traefik \
-  --namespace traefik \
-  --values values.yaml
+# or
+helm install traefik traefik/traefik \                                                      
+  --namespace traefik --create-namespace \
+  --values k3s/charts/traefik-manifests/traefik-values.yaml
 ```
 
 Verify Traefik got an external IP:
@@ -254,17 +273,16 @@ helm repo update
 
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
-  --create-namespace \
-  --version v1.19.1 \
+  --create-namespace \ 
   --set crds.enabled=true
 
 # or
+
 helm repo add jetstack https://charts.jetstack.io --force-update
 helm upgrade --install \
 cert-manager jetstack/cert-manager \
 --namespace cert-manager \
---create-namespace \
---version v1.15.1 \
+--create-namespace \ 
 --set crds.enabled=true \
 --set "extraArgs={--enable-gateway-api}"
 ```
@@ -524,20 +542,42 @@ vault write auth/kubernetes/role/cert-manager \
 ### 8.5 Create ClusterIssuer with Kubernetes Auth
 
 ```bash
-kubectl apply -f manifests/cluster-issuers/vault-ci.yaml
+kubectl apply -f k3s/manifests/cluster-issuers/cluster-issuers.yaml
 ```
 
 <details>
-<summary>manifests/cluster-issuers/vault-ci.yaml (k8s-auth)</summary>
+<summary>manifests/cluster-issuers/cluster-issuers.yaml (k8s-auth)</summary>
 
 ```yaml
+# Self-signed issuer for local development
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-ci
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: vault-token-ci
+spec:
+  vault:
+    server: http://192.168.31.53:8200
+    path: pki/sign/poddle-uz
+    auth:
+      tokenSecretRef:
+        name: vault-token
+        key: token
+---
+# Kubernetes auth
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: vault-k8s-ci
 spec:
   vault:
-    server: http://192.168.31.247:8200
+    server: http://192.168.31.53:8200
     path: pki/sign/poddle-uz
     auth:
       kubernetes:
@@ -545,13 +585,94 @@ spec:
         mountPath: /v1/auth/kubernetes
         serviceAccountRef:
           name: cert-manager
+---
+# Let's Encrypt Staging
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging-ci
+spec:
+  acme:
+    # Staging server for testing (higher rate limits)
+    email: atajanovkamronbek2003@gmail.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-private-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+---
+# Let's Encrypt Production
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production-ci
+spec:
+  acme:
+    # Production server (strict rate limits)
+    email: atajanovkamronbek2003@gmail.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-production-private-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+```
+
+</details>
+
+### Checking
+
+```bash
+~ ❯ kubectl get clusterissuers
+NAME                        READY   AGE
+letsencrypt-production-ci   True    2m37s
+letsencrypt-staging-ci      True    2m37s
+selfsigned-ci               True    2m37s
+vault-k8s-ci                True    2m37s
+vault-token-ci              False   2m37s
+```
+
+### Apply wildcard certificate
+
+```bash
+kubectl apply -f k3s/manifests/certificates/wildcard-certificate.yaml
+```
+
+<details>
+<summary>manifests/cluster-issuers/cluster-issuers.yaml (k8s-auth)</summary>
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-poddle-uz-certificate
+  namespace: traefik
+spec:
+  secretName: wildcard-poddle-uz-tls
+  issuerRef:
+    name: vault-k8s-ci
+    kind: ClusterIssuer
+    group: cert-manager.io
+  commonName: "*.poddle.uz"
+  dnsNames:
+    - "*.poddle.uz"
+    - "poddle.uz"
+  duration: 720h # 30 days
+  renewBefore: 168h # Renew 7 days before expiry
 ```
 
 </details>
 
 ---
 
-## 9. Vault KV Secrets for Applications
+> head to k3s/manifests/vault/README.md
+
+---
+
+## 9. Vault KV Secrets for Applications (OLD)
 
 > This section configures Vault to store application secrets (env vars, API keys, etc.) separately from PKI certificates.
 
