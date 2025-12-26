@@ -101,6 +101,143 @@ class VMManager:
             d.mkdir(parents=True, exist_ok=True)
         print(f"✓ Directory structure created at: {self.base_dir}")
 
+    def _fix_libvirt_permissions(self) -> bool:
+        """Fix permissions for libvirt-qemu user access"""
+        print("\n🔐 Checking libvirt permissions...")
+
+        # Get the path that needs permissions (usually home directory)
+        home_dir = Path.home()
+        base_path = self.base_dir
+
+        # Check if base_dir is under home
+        try:
+            base_path.relative_to(home_dir)
+            needs_permission = True
+        except ValueError:
+            # Not under home directory, might not need permission fix
+            needs_permission = False
+
+        if not needs_permission:
+            print("✓ VM directory is not under home, permissions should be OK")
+            return True
+
+        print(f"⚠️  VM files are under home directory: {home_dir}")
+        print("   This requires granting libvirt-qemu user access")
+        print("\n📝 Permission options:")
+        print("   1. Add execute permission to home directory (recommended)")
+        print("   2. Change ownership of VM files to libvirt-qemu")
+        print("   3. Use ACLs to grant specific access")
+        print("   4. Skip and try anyway")
+
+        choice = self._prompt("Choose option", "1")
+
+        if choice == "1":
+            # Add execute permission to home directory
+            print(f"\n🔧 Adding execute permission to: {home_dir}")
+            print("   Running: chmod o+x ~")
+            try:
+                subprocess.run(
+                    ["chmod", "o+x", str(home_dir)], check=True, capture_output=True
+                )
+                # Also ensure the .kvm directory is readable
+                subprocess.run(
+                    ["chmod", "-R", "o+rX", str(self.base_dir)],
+                    check=True,
+                    capture_output=True,
+                )
+                print("✓ Permissions updated successfully")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to set permissions: {e}")
+                return False
+
+        elif choice == "2":
+            # Change ownership
+            print("\n🔧 Changing ownership of VM files to libvirt-qemu")
+            try:
+                # Get libvirt-qemu UID and GID
+                result = subprocess.run(
+                    ["id", "-u", "libvirt-qemu"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                qemu_uid = result.stdout.strip()
+
+                result = subprocess.run(
+                    ["id", "-g", "libvirt-qemu"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                qemu_gid = result.stdout.strip()
+
+                # Change ownership of the base directory
+                subprocess.run(
+                    [
+                        "sudo",
+                        "chown",
+                        "-R",
+                        f"{qemu_uid}:{qemu_gid}",
+                        str(self.base_dir),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                print("✓ Ownership changed successfully")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to change ownership: {e}")
+                return False
+
+        elif choice == "3":
+            # Use ACLs
+            print("\n🔧 Setting ACLs for libvirt-qemu user")
+            try:
+                # Check if setfacl is available
+                subprocess.run(["which", "setfacl"], check=True, capture_output=True)
+
+                # Set ACL on home directory
+                subprocess.run(
+                    ["setfacl", "-m", "u:libvirt-qemu:x", str(home_dir)],
+                    check=True,
+                    capture_output=True,
+                )
+
+                # Set ACL on .kvm directory recursively
+                subprocess.run(
+                    ["setfacl", "-R", "-m", "u:libvirt-qemu:rX", str(self.base_dir)],
+                    check=True,
+                    capture_output=True,
+                )
+
+                # Set default ACL for new files
+                subprocess.run(
+                    [
+                        "setfacl",
+                        "-R",
+                        "-d",
+                        "-m",
+                        "u:libvirt-qemu:rX",
+                        str(self.base_dir),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+
+                print("✓ ACLs set successfully")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to set ACLs: {e}")
+                print("   Make sure 'acl' package is installed")
+                return False
+
+        elif choice == "4":
+            print("⚠️  Skipping permission fix, attempting to create VM anyway...")
+            return True
+
+        return False
+
     def list_available_images(self) -> dict[str, str]:
         """List available cloud images"""
         print("\n📦 Available Cloud Images:")
@@ -559,6 +696,17 @@ class VMManager:
 
             confirm: str = self._prompt("\n✓ Create VM? [y/N]", "y")
             if confirm.lower() == "y":
+                # Fix permissions before creating VM
+                if not self._fix_libvirt_permissions():
+                    print(
+                        "\n⚠️  Permission setup failed. You may encounter access errors."
+                    )
+                    retry = self._prompt("Continue anyway? [y/N]", "n")
+                    if retry.lower() != "y":
+                        print("❌ Cancelled")
+                        self._cleanup()
+                        return
+
                 self.create_vm(config)
                 print(f"\n✅ VM '{vm_name}' created successfully!")
                 print(f"\nConnect with: ssh {username}@<vm-ip>")

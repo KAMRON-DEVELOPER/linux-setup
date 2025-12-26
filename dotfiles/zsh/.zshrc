@@ -58,10 +58,8 @@ if [[ -d "$HOME/.pyenv" ]]; then
 fi
 
 # Nvm node version manager
-
 # Nvm from pacman
 [ -s "/usr/share/nvm/init-nvm.sh" ] && source /usr/share/nvm/init-nvm.sh
-
 # Nvm node version manager (manual installation)
 if [[ -d "$HOME/.config/nvm" ]]; then
   export NVM_DIR="$HOME/.config/nvm"
@@ -92,6 +90,11 @@ fi
 if [[ -d "$HOME/flutter" ]]; then
   export PATH="$HOME/flutter/bin:$PATH"
   export PATH="$PATH":"$HOME/.pub-cache/bin"
+fi
+
+# KVM tools
+if [[ -d "$HOME/Documents/linux-setup/kvm" ]]; then
+  export PATH="$HOME/Documents/linux-setup/kvm:$PATH"
 fi
 
 # Git add, commit, push
