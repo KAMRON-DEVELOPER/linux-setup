@@ -379,7 +379,7 @@ vault secrets tune -max-lease-ttl=87600h pki
 # Generate Root CA
 vault write -field=certificate pki/root/generate/internal \
     common_name="Poddle Root CA" \
-    issuer_name="root-2025" \
+    issuer_name="poddle-issuer-2025-12-26" \
     ttl=87600h > ~/poddle-root-ca.crt
 
 # Configure CA URLs
