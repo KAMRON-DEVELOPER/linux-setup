@@ -1,3 +1,0 @@
-1prometheus:
-2  podMonitor:
-3    enabled: true

@@ -282,6 +282,68 @@ kubectl get pods -n cert-manager
 
 > This approach uses a manually created Vault token stored in Kubernetes Secret.
 
+### 7.1 Initial vault setup
+
+```bash
+~/Documents/Docker ❯ vault operator init
+```
+
+> output
+
+```bash
+Unseal Key 1: ...
+Unseal Key 2: ...
+Unseal Key 3: ...
+Unseal Key 4: ...
+Unseal Key 5: ...
+
+Initial Root Token: ...
+
+Vault initialized with 5 key shares and a key threshold of 3. Please securely
+distribute the key shares printed above. When the Vault is re-sealed,
+restarted, or stopped, you must supply at least 3 of these keys to unseal it
+before it can start servicing requests.
+
+Vault does not store the generated root key. Without at least 3 keys to
+reconstruct the root key, Vault will remain permanently sealed!
+
+It is possible to generate new unseal keys, provided you have a quorum of
+existing unseal keys shares. See "vault operator rekey" for more information.
+```
+
+> Run these commands, You should run at leasy three of them to unseal vault
+
+```bash
+~/Documents/Docker ❯ vault operator unseal $UNSEAL_KEY1
+~/Documents/Docker ❯ vault operator unseal $UNSEAL_KEY2
+~/Documents/Docker ❯ vault operator unseal $UNSEAL_KEY3
+```
+
+> ~/.zsh_secrets file should be like this
+
+```bash
+UNSEAL_KEY1='...'
+UNSEAL_KEY2='...'
+UNSEAL_KEY3='...'
+UNSEAL_KEY4='...'
+UNSEAL_KEY5='...'
+
+VAULT_TOKEN='...'
+```
+
+> ~/.zshrc file should be added, so it prevent from adding to git/stow like flow
+
+```bash
+export KUBE_EDITOR="nvim"
+export VAULT_ADDR='http://vault.poddle.uz:8200'
+
+# Load local secrets
+[[ -f "$HOME/.zsh_secrets" ]] && source "$HOME/.zsh_secrets"
+# if [[ -f "$HOME/.zsh_secrets" ]]; then
+#   source "$HOME/.zsh_secrets"
+# fi
+```
+
 ### 7.1 Configure Vault PKI
 
 On your host (with Vault access):
@@ -446,6 +508,8 @@ vault write auth/kubernetes/config \
 
 > **IMPORTANT**: The `token_reviewer_jwt` must be from a ServiceAccount with `system:auth-delegator` role.  
 > Using the `cert-manager` SA will cause "permission denied" errors because it can't call the TokenReview API.
+> there is no flag like `--serviceaccount=...` But!
+> The vault-reviewer in this command is the ServiceAccount name. The command is specifically creating a token for that ServiceAccount.
 
 ### 8.4 Create Vault Role for cert-manager
 
