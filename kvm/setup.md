@@ -361,12 +361,6 @@ virsh net-list --all
 # Should show vmbridge as 'active' with autostart 'yes'
 ```
 
-#### 4. Cleanup
-
-```bash
-rm /tmp/vmbridge.xml
-```
-
 **Expected output:**
 
 ```bash
@@ -374,6 +368,12 @@ rm /tmp/vmbridge.xml
 ---------------------------------------------
  default    active   yes         yes
  vmbridge   active   yes         yes
+```
+
+#### 4. Cleanup
+
+```bash
+rm /tmp/vmbridge.xml
 ```
 
 ---
