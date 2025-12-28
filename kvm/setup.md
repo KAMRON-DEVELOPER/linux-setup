@@ -10,7 +10,7 @@
 zgrep CONFIG_KVM /proc/config.gz
 ```
 
-> [!INFO]
+> [!CAUTION]
 > y = Built-in, m = Loadable module
 
 #### Check if modules are loaded
@@ -19,7 +19,7 @@ zgrep CONFIG_KVM /proc/config.gz
 lsmod | grep kvm
 ```
 
-> [!INFO]
+> [!CAUTION]
 > Should show: kvm_intel or kvm_amd
 
 ### Hardware Requirements
