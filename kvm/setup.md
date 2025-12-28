@@ -24,15 +24,23 @@ lsmod | grep kvm
 
 ### Hardware Requirements
 
-```bash
-# Check CPU virtualization support
-lscpu | grep Virtualization
-# Should show: VT-x (Intel) or AMD-V (AMD)
+#### Check CPU virtualization support
 
-# Count virtualization flags
-egrep -c '(vmx|svm)' /proc/cpuinfo
-# If > 0, virtualization is supported
+```bash
+lscpu | grep Virtualization
 ```
+
+> [!CAUTION]
+> Should show: VT-x (Intel) or AMD-V (AMD)
+
+#### Count virtualization flags
+
+```bash
+egrep -c '(vmx|svm)' /proc/cpuinfo
+```
+
+> [!CAUTION]
+> If > 0, virtualization is supported
 
 **Enable in BIOS/UEFI:**
 
