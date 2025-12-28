@@ -325,6 +325,25 @@ Name=br0
 DHCP=yes
 EOF
 
+# 2. The bridge configuration to use a Static IP
+sudo tee /etc/systemd/network/10-br0.network > /dev/null << 'EOF'
+[Match]
+Name=br0
+
+[Network] 
+DHCP=no
+
+# Set your static IP (CIDR notation)
+Address=192.168.1.30/24
+
+# Set your Router IP
+Gateway=192.168.1.1
+
+# Set DNS (Google/Cloudflare or your local DNS)
+DNS=8.8.8.8
+DNS=1.1.1.1
+EOF
+
 # 3. Attach Ethernet to bridge
 # Replace enp2s0 with your interface
 sudo tee /etc/systemd/network/20-enp2s0.network > /dev/null << 'EOF'
