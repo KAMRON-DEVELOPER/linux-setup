@@ -50,6 +50,8 @@ egrep -c '(vmx|svm)' /proc/cpuinfo
    - **AMD**: "SVM Mode" or "AMD-V"
    - **Optional**: "Intel VT-d" or "AMD IOMMU" (for PCI passthrough)
 
+---
+
 ## Installation
 
 ```bash
@@ -104,6 +106,8 @@ source ~/.zshrc
 virsh list --all
 lsmod | grep kvm
 ```
+
+---
 
 ## Network Configuration
 
