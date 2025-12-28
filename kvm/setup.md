@@ -4,15 +4,23 @@
 
 ### Verify Kernel KVM Support
 
-```bash
-# Check if KVM modules are available
-zgrep CONFIG_KVM /proc/config.gz
-# y = Built-in, m = Loadable module
+#### Check if KVM modules are available
 
-# Check if modules are loaded
-lsmod | grep kvm
-# Should show: kvm_intel or kvm_amd
+```bash
+zgrep CONFIG_KVM /proc/config.gz
 ```
+
+> [!WARNING]
+> y = Built-in, m = Loadable module
+
+#### Check if modules are loaded
+
+```bash
+lsmod | grep kvm
+```
+
+> [!WARNING]
+> Should show: kvm_intel or kvm_amd
 
 ### Hardware Requirements
 
