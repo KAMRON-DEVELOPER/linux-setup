@@ -139,6 +139,7 @@ EOF
 
 ##### Static IP
 
+> [!WARNING]
 > Don't set Address to `Address=192.168.31.1/24`, because usually 192.168.31.1 reserved in routers
 >
 ###### PC Static IP
