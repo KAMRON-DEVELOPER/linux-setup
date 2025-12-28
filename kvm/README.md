@@ -437,7 +437,7 @@ rm /tmp/vmbridge.xml
 
 **Expected output:**
 
-```
+```bash
  Name       State    Autostart   Persistent
 ---------------------------------------------
  default    active   yes         yes
@@ -527,7 +527,7 @@ conf-dir=/etc/dnsmasq.d/,*.conf
 
 ```bash
 # Create custom domain configuration
-sudo nano /etc/dnsmasq.d/local-domains.conf
+sudo nano /etc/dnsmasq.d/local.conf
 ```
 
 ```conf
@@ -616,8 +616,7 @@ dig google.com
 
 **Choose between Modular (recommended) or Monolithic daemons:**
 
-<details>
-<summary><b>Option 1: Modular Daemons (Recommended)</b></summary>
+#### Option 1: Modular Daemons (Recommended)
 
 Better resource usage, more granular control.
 
@@ -640,18 +639,14 @@ sudo systemctl enable --now virtqemud.socket virtnetworkd.socket \
 - `virtstoraged` - Storage pools and volumes
 - `virtproxyd` - Compatibility layer (makes tools work)
 
-</details>
-
-<details>
-<summary><b>Option 2: Monolithic Daemon</b></summary>
-
-Single daemon, simpler but older approach.
+#### Option 2: Monolithic Daemon
+>
+> [!INFO]
+> Single daemon, simpler but older approach.
 
 ```bash
 sudo systemctl enable --now libvirtd.service
 ```
-
-</details>
 
 ### Grant User Access
 
