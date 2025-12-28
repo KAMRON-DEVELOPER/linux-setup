@@ -1,5 +1,29 @@
 # KVM/QEMU Virtualization Setup Guide
 
+> [!NOTE]
+> IF you installed arch with profile server it will be very minimal and ssh doesn't looks good as ubuntu
+> so install `bash-completion` and set ~/.bashrc like so.
+
+```bash
+sudo pacman -S bash-completion
+```
+
+```bash
+if [[ -r /usr/share/bash-completion/bash_completion ]]; then
+  . /usr/share/bash-completion/bash_completion
+fi
+```
+
+```bash
+[[ -f /etc/bash.bashrc ]] && source /etc/bash.bashrc
+```
+
+Prompt quality (PS1)
+
+```bash
+PS1='\[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ '
+```
+
 ## Prerequisites
 
 ### Verify Kernel KVM Support
