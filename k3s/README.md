@@ -24,7 +24,7 @@
 
 ### Assumptions
 
-- **Vault is running** in Docker on your host machine (e.g., `192.168.31.247:8200`)
+- **Vault is running** in Docker on your host machine (e.g., `192.168.31.2:8200`)
 - VMs have network access to the host (Vault accessible via bridge network)
 - DNS is configured (dnsmasq or similar) to resolve `*.poddle.uz`
 
@@ -40,8 +40,8 @@ sudo pacman -S kubectl helm cilium-cli
 
 | Role | Hostname | IP Address | OS |
 |------|----------|------------|-----|
-| Server | k3s-server | 192.168.31.106 | Ubuntu 22.04 |
-| Agent | k3s-agent | 192.168.31.26 | Ubuntu 22.04 |
+| Server | k3s-server | 192.168.31.4 | Ubuntu 22.04 |
+| Agent | k3s-agent | 192.168.31.5 | Ubuntu 22.04 |
 
 > Each machine must have a unique hostname.
 
@@ -51,7 +51,7 @@ sudo pacman -S kubectl helm cilium-cli
 
 ### 2.1 Install K3s Server
 
-SSH into the server node (`192.168.31.106`):
+SSH into the server node (`192.168.31.4`):
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
@@ -63,10 +63,10 @@ curl -sfL https://get.k3s.io | sh -s - server \
   --disable-kube-proxy \
   --cluster-cidr=10.42.0.0/16 \
   --service-cidr=10.43.0.0/16 \
-  --bind-address=192.168.31.106 \
-  --advertise-address=192.168.31.106 \
-  --node-ip=192.168.31.106 \
-  --tls-san=192.168.31.106
+  --bind-address=192.168.31.4 \
+  --advertise-address=192.168.31.4 \
+  --node-ip=192.168.31.4 \
+  --tls-san=192.168.31.4
 ```
 
 **Why these flags?**
@@ -92,11 +92,11 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 
 ### 2.2 Install K3s Agent
 
-SSH into the agent node (`192.168.31.26`):
+SSH into the agent node (`192.168.31.5`):
 
 ```bash
 export NODE_TOKEN="<token-from-server>"
-export MASTER_IP="192.168.31.106"
+export MASTER_IP="192.168.31.4"
 
 curl -sfL https://get.k3s.io | K3S_URL="https://${MASTER_IP}:6443" \
   K3S_TOKEN="${NODE_TOKEN}" sh -
@@ -108,10 +108,10 @@ On your Arch Linux host:
 
 ```bash
 mkdir -p ~/.kube
-scp kamronbek@192.168.31.106:/etc/rancher/k3s/k3s.yaml ~/.kube/config
+scp kamronbek@192.168.31.4:/etc/rancher/k3s/k3s.yaml ~/.kube/config
 
 # Update API server address
-sed -i 's/127.0.0.1/192.168.31.106/g' ~/.kube/config
+sed -i 's/127.0.0.1/192.168.31.4/g' ~/.kube/config
 
 chmod 600 ~/.kube/config
 ```
@@ -134,7 +134,7 @@ helm repo update
 
 helm install cilium cilium/cilium \
   --namespace kube-system \
-  --set k8sServiceHost=192.168.31.106 \
+  --set k8sServiceHost=192.168.31.4 \
   --set k8sServicePort=6443 \
   --set ipam.mode=kubernetes \
   --set kubeProxyReplacement=true
@@ -458,7 +458,7 @@ metadata:
   name: vault-token-ci
 spec:
   vault:
-    server: http://192.168.31.247:8200
+    server: http://192.168.31.2:8200
     path: pki/sign/poddle-uz
     auth:
       tokenSecretRef:
@@ -512,7 +512,7 @@ K8S_CA_CERT=$(kubectl config view --raw --minify --flatten \
     -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d)
 
 # Get the Kubernetes API server address
-K8S_HOST="https://192.168.31.106:6443"
+K8S_HOST="https://192.168.31.4:6443"
 
 # Get token from vault-reviewer SA (has TokenReview permissions)
 REVIEWER_TOKEN=$(kubectl create token vault-reviewer -n kube-system --duration=87600h)
@@ -746,7 +746,7 @@ Your application needs these environment variables:
 ```yaml
 env:
   - name: VAULT_ADDRESS
-    value: "http://192.168.31.247:8200"
+    value: "http://192.168.31.2:8200"
   - name: VAULT_AUTH_MOUNT
     value: "kubernetes"
   - name: VAULT_AUTH_ROLE
@@ -781,7 +781,7 @@ spec:
           image: your-image:latest
           env:
             - name: VAULT_ADDRESS
-              value: "http://192.168.31.247:8200"
+              value: "http://192.168.31.2:8200"
             - name: VAULT_AUTH_MOUNT
               value: "kubernetes"
             - name: VAULT_AUTH_ROLE
@@ -973,13 +973,13 @@ kubectl -n kube-system edit configmap coredns
 Add forward to your host DNS:
 
 ```
-forward . 192.168.31.247 /etc/resolv.conf
+forward . 192.168.31.2 /etc/resolv.conf
 ```
 
 Or use IP directly in ClusterIssuer:
 
 ```yaml
-server: http://192.168.31.247:8200  # Use IP instead of hostname
+server: http://192.168.31.2:8200  # Use IP instead of hostname
 ```
 
 ### Vault Connection Issues
@@ -989,8 +989,8 @@ server: http://192.168.31.247:8200  # Use IP instead of hostname
 curl http://vault.poddle.uz:8200/v1/sys/health
 
 # Test from K3s node
-ssh kamronbek@192.168.31.106
-curl http://192.168.31.247:8200/v1/sys/health
+ssh kamronbek@192.168.31.4
+curl http://192.168.31.2:8200/v1/sys/health
 ```
 
 ---
