@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx-ingress
+  namespace: nginx
   annotations:
     # cert-manager.io/cluster-issuer: vault-k8s-ci # Local dev
     # cert-manager.io/cluster-issuer: letsencrypt-production  # Production
@@ -13,7 +14,7 @@ spec:
     - hosts:
         - nginx.poddle.uz
       # secretName: nginx-tls-secret
-      secretName: wildcard-poddle-uz-secret # Shared wildcard certificate
+      secretName: wildcard-poddle-uz-tls-secret # Shared wildcard certificate
   rules:
     - host: nginx.poddle.uz
       http:

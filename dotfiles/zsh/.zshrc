@@ -112,10 +112,13 @@ export LIBVIRT_DEFAULT_URI='qemu:///system'
 export EDITOR=nvim
 export VISUAL=nvim
 export KUBE_EDITOR="nvim"
-export VAULT_ADDR='http://vault.poddle.uz:8200'
+export VAULT_ADDR='https://vault.poddle.uz'
 
 # Load local secrets
 [[ -f "$HOME/.zsh_secrets" ]] && source "$HOME/.zsh_secrets"
 # if [[ -f "$HOME/.zsh_secrets" ]]; then
 #   source "$HOME/.zsh_secrets"
 # fi
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /usr/bin/vault vault
