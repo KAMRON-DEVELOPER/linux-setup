@@ -113,6 +113,10 @@ export EDITOR=nvim
 export VISUAL=nvim
 export KUBE_EDITOR="nvim"
 export VAULT_ADDR='https://vault.poddle.uz'
+export _JAVA_AWT_WM_NONREPARENTING=1
+# export AWT_TOOLKIT=MToolkit
+export GDK_BACKEND=wayland
+# export QT_QPA_PLATFORM=wayland
 
 # Load local secrets
 [[ -f "$HOME/.zsh_secrets" ]] && source "$HOME/.zsh_secrets"
