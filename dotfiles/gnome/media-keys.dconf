@@ -1,0 +1,10 @@
+[/]
+control-center=['<Super>i']
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']
+home=['<Super>e']
+search=['<Super>space']
+
+[custom-keybindings/custom0]
+binding='<Super>Return'
+command='alacritty'
+name='Alacritty'
