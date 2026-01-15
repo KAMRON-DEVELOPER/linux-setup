@@ -41,7 +41,8 @@ sudo pacman -S kubectl helm cilium-cli
 | Role | Hostname | IP Address | OS |
 |------|----------|------------|-----|
 | Server | k3s-server | 192.168.31.4 | Ubuntu 22.04 |
-| Agent | k3s-agent | 192.168.31.5 | Ubuntu 22.04 |
+| Agent | k3s-agent-1 | 192.168.31.5 | Ubuntu 22.04 |
+| Agent | k3s-agent-2 | 192.168.31.6 | Ubuntu 22.04 |
 
 > Each machine must have a unique hostname.
 

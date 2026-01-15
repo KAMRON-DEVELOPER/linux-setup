@@ -1072,13 +1072,13 @@ ssh -i ~/path/to/key kamronbek@<vm-ip>
 ```bash
 # Use kvm.py to create:
 python kvm.py
-# Create: k3s-server (4GB RAM, 2 vCPUs)
+# Create: k3s-server (6GB RAM, 2 vCPUs)
 
 python kvm.py
-# Create: k3s-worker1 (4GB RAM, 2 vCPUs)
+# Create: k3s-agent1 (4GB RAM, 2 vCPUs)
 
 python kvm.py
-# Create: k3s-worker2 (4GB RAM, 2 vCPUs)
+# Create: k3s-agent2 (4GB RAM, 2 vCPUs)
 ```
 
 #### Step 2: Install K3s on Master
