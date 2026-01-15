@@ -104,6 +104,8 @@ function acp() {
   git push
 }
 
+alias k="kubectl"
+
 # Env vars
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_PICTURES_DIR="$HOME/Pictures/Screenshots"
