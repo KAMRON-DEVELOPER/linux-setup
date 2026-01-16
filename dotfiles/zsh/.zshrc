@@ -45,7 +45,14 @@ if [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; 
 fi
 
 # Rust
-export PATH="$HOME/.cargo/bin:$PATH"
+if [[ -d "$HOME/.cargo/bin" ]]; then
+  export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# GO
+if [[ -d "$HOME/go/bin" ]]; then
+  export PATH="$HOME/go/bin:$PATH"
+fi
 
 # Pyenv
 if [[ -d "$HOME/.pyenv" ]]; then

@@ -247,7 +247,7 @@ DHCP=no
 Address=192.168.31.2/24
 
 # Set your Router IP
-Gateway=192.168.1.1
+Gateway=192.168.31.1
 
 # Set DNS (Google/Cloudflare or your local DNS)
 DNS=1.1.1.1
@@ -449,7 +449,7 @@ sudo nano /etc/dnsmasq.conf
 # Bind to localhost and bridge
 port=53
 # listen-address=127.0.0.1 # Don't do that, it only listen to localhost, eventually VM's can't reach to host dns server
-listen-address=192.168.31.3
+listen-address=192.168.31.2
 interface=br0
 
 # Don't forward queries for non-routed addresses
@@ -479,7 +479,7 @@ sudo tee /etc/systemd/network/20-enp2s0f0.network > /dev/null << 'EOF'
 # Bind to localhost and bridge
 port=53
 # listen-address=127.0.0.1 # Don't do that, it only listen to localhost, eventually VM's can't reach to host dns server
-listen-address=192.168.31.3
+listen-address=192.168.31.2
 interface=br0
 
 # Don't forward queries for non-routed addresses
@@ -536,6 +536,13 @@ sudo chattr +i /etc/resolv.conf
 # Verify
 cat /etc/resolv.conf
 lsattr /etc/resolv.conf  # Should show 'i' flag
+```
+
+or maybe
+
+```bash
+nameserver 192.168.31.2
+options edns0 trust-ad
 ```
 
 ### Step 5: Start dnsmasq
