@@ -122,6 +122,7 @@ export EDITOR=nvim
 export VISUAL=nvim
 export KUBE_EDITOR="nvim"
 export VAULT_ADDR='https://vault.poddle.uz'
+LOKI_ADDR='https://loki.poddle.uz'
 export _JAVA_AWT_WM_NONREPARENTING=1
 # export AWT_TOOLKIT=MToolkit
 export GDK_BACKEND=wayland
