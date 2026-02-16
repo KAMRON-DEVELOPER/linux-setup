@@ -111,6 +111,63 @@ function acp() {
   git push
 }
 
+add-vault-config() {
+  local vault_keys_file="${1:-~/certs/vault-keys.json}"
+  
+  if [[ ! -f "$vault_keys_file" ]]; then
+      echo "Error: vault-keys.json not found at $vault_keys_file"
+      return 1
+  fi
+  
+  # Prompt for details
+  echo "Enter vault environment name (e.g., local, poddle-mvp, prod):"
+  read vault_name
+  
+  echo "Enter vault address (e.g., https://vault.poddle.uz):"
+  read vault_addr
+  
+  # Extract keys and token
+  local token=$(jq -r '.root_token' "$vault_keys_file")
+  local key1=$(jq -r '.unseal_keys_b64[0]' "$vault_keys_file")
+  local key2=$(jq -r '.unseal_keys_b64[1]' "$vault_keys_file")
+  local key3=$(jq -r '.unseal_keys_b64[2]' "$vault_keys_file")
+  local key4=$(jq -r '.unseal_keys_b64[3]' "$vault_keys_file")
+  local key5=$(jq -r '.unseal_keys_b64[4]' "$vault_keys_file")
+  
+  # Append to ~/.secrets (won't wipe existing content!)
+  cat >> ~/.secrets <<EOF
+
+# ${vault_name^} Vault
+function vault-${vault_name}() {
+    # Vault root token
+    export VAULT_TOKEN="$token"
+    export VAULT_ADDR="$vault_addr"
+    echo "Switched to Vault ${vault_name^}"
+}
+
+function vault-unseal-${vault_name}() {
+  # Vault unseal keys
+  export UNSEAL_KEY1="$key1"
+  export UNSEAL_KEY2="$key2"
+  export UNSEAL_KEY3="$key3"
+  export UNSEAL_KEY4="$key4"
+  export UNSEAL_KEY5="$key5"
+}
+EOF
+    
+  echo "✅ Added vault-${vault_name} and vault-unseal-${vault_name} to ~/.secrets"
+  echo "🔄 Reloading ~/.secrets..."
+  source ~/.secrets
+  
+  # Optionally delete vault-keys.json
+  echo -n "Delete $vault_keys_file? (y/N): "
+  read delete_keys
+  if [[ "$delete_keys" =~ ^[Yy]$ ]]; then
+      rm "$vault_keys_file"
+      echo "🗑️  Deleted $vault_keys_file"
+  fi
+}
+
 alias k="kubectl"
 
 # Env vars
@@ -121,18 +178,19 @@ export LIBVIRT_DEFAULT_URI='qemu:///system'
 export EDITOR=nvim
 export VISUAL=nvim
 export KUBE_EDITOR="nvim"
-export VAULT_ADDR='https://vault.poddle.uz'
-LOKI_ADDR='https://loki.poddle.uz'
+# export KUBECONFIG=~/.kube/config:~/.kube/config-local:~/.kube/config-poddle-mvp
 export _JAVA_AWT_WM_NONREPARENTING=1
-# export AWT_TOOLKIT=MToolkit
 export GDK_BACKEND=wayland
 # export QT_QPA_PLATFORM=wayland
 
 # Load local secrets
-[[ -f "$HOME/.zsh_secrets" ]] && source "$HOME/.zsh_secrets"
-# if [[ -f "$HOME/.zsh_secrets" ]]; then
-#   source "$HOME/.zsh_secrets"
+[[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
+# if [[ -f "$HOME/.secrets" ]]; then
+#   source "$HOME/.secrets"
 # fi
 
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /usr/bin/vault vault
+. $(pack-cli completion --shell zsh)
+
+typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
