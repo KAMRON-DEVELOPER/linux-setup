@@ -112,59 +112,73 @@ function acp() {
 }
 
 add-vault-config() {
-  local vault_keys_file="${1:-~/certs/vault-keys.json}"
-  
-  if [[ ! -f "$vault_keys_file" ]]; then
-      echo "Error: vault-keys.json not found at $vault_keys_file"
-      return 1
-  fi
-  
-  # Prompt for details
-  echo "Enter vault environment name (e.g., local, poddle-mvp, prod):"
-  read vault_name
-  
-  echo "Enter vault address (e.g., https://vault.poddle.uz):"
-  read vault_addr
-  
-  # Extract keys and token
-  local token=$(jq -r '.root_token' "$vault_keys_file")
-  local key1=$(jq -r '.unseal_keys_b64[0]' "$vault_keys_file")
-  local key2=$(jq -r '.unseal_keys_b64[1]' "$vault_keys_file")
-  local key3=$(jq -r '.unseal_keys_b64[2]' "$vault_keys_file")
-  local key4=$(jq -r '.unseal_keys_b64[3]' "$vault_keys_file")
-  local key5=$(jq -r '.unseal_keys_b64[4]' "$vault_keys_file")
-  
-  # Append to ~/.secrets (won't wipe existing content!)
-  cat >> ~/.secrets <<EOF
+  emulate -L zsh
+  setopt pipefail
 
-# ${vault_name^} Vault
+  local vault_keys_file="${1:-$HOME/certs/vault-keys.json}"
+  if [[ ! -f "$vault_keys_file" ]]; then
+    echo "Error: vault keys file not found: $vault_keys_file"
+    return 1
+  fi
+  command -v jq >/dev/null || { echo "Error: jq not found"; return 1; }
+
+  echo "Enter vault environment name (e.g., local, poddle-mvp, prod):"
+  local vault_name; read vault_name
+  [[ -z "$vault_name" ]] && { echo "Error: empty name"; return 1; }
+
+  echo "Enter vault address (e.g., https://vault.poddle.uz):"
+  local vault_addr; read vault_addr
+  [[ -z "$vault_addr" ]] && { echo "Error: empty address"; return 1; }
+
+  local token key1 key2 key3 key4 key5
+  token="$(jq -r '.root_token' "$vault_keys_file")"
+  key1="$(jq -r '.unseal_keys_b64[0]' "$vault_keys_file")"
+  key2="$(jq -r '.unseal_keys_b64[1]' "$vault_keys_file")"
+  key3="$(jq -r '.unseal_keys_b64[2]' "$vault_keys_file")"
+  key4="$(jq -r '.unseal_keys_b64[3]' "$vault_keys_file")"
+  key5="$(jq -r '.unseal_keys_b64[4]' "$vault_keys_file")"
+
+  local vault_title="${(C)vault_name}"   # zsh capitalization
+
+  mkdir -p "$HOME/.secrets.d"
+  local out="$HOME/.secrets.d/vault-${vault_name}.zsh"
+
+  cat > "$out" <<EOF
+# ${vault_title} Vault (generated)
 function vault-${vault_name}() {
-    # Vault root token
-    export VAULT_TOKEN="$token"
-    export VAULT_ADDR="$vault_addr"
-    echo "Switched to Vault ${vault_name^}"
+  export VAULT_TOKEN="${token}"
+  export VAULT_ADDR="${vault_addr}"
+  echo "Switched to Vault ${vault_title}"
 }
 
 function vault-unseal-${vault_name}() {
-  # Vault unseal keys
-  export UNSEAL_KEY1="$key1"
-  export UNSEAL_KEY2="$key2"
-  export UNSEAL_KEY3="$key3"
-  export UNSEAL_KEY4="$key4"
-  export UNSEAL_KEY5="$key5"
+  export UNSEAL_KEY1="${key1}"
+  export UNSEAL_KEY2="${key2}"
+  export UNSEAL_KEY3="${key3}"
+  export UNSEAL_KEY4="${key4}"
+  export UNSEAL_KEY5="${key5}"
 }
 EOF
-    
-  echo "✅ Added vault-${vault_name} and vault-unseal-${vault_name} to ~/.secrets"
-  echo "🔄 Reloading ~/.secrets..."
-  source ~/.secrets
-  
-  # Optionally delete vault-keys.json
+
+  # Ensure ~/.secrets loads the directory (one-time append)
+  if ! grep -q 'source \$HOME/\.secrets\.d/\*' "$HOME/.secrets" 2>/dev/null; then
+    cat >> "$HOME/.secrets" <<'EOF'
+
+# Load per-env secrets
+for f in "$HOME/.secrets.d/"*.zsh(N); do
+  source "$f"
+done
+EOF
+  fi
+
+  source "$HOME/.secrets"
+  echo "✅ Wrote $out and reloaded ~/.secrets"
+
   echo -n "Delete $vault_keys_file? (y/N): "
-  read delete_keys
-  if [[ "$delete_keys" =~ ^[Yy]$ ]]; then
-      rm "$vault_keys_file"
-      echo "🗑️  Deleted $vault_keys_file"
+  local delete_keys; read delete_keys
+  if [[ "$delete_keys" == [Yy] ]]; then
+    rm -f "$vault_keys_file"
+    echo "🗑️ Deleted $vault_keys_file"
   fi
 }
 
@@ -176,6 +190,7 @@ export XDG_PICTURES_DIR="$HOME/Pictures/Screenshots"
 export HYPRSHOT_DIR="$HOME/Pictures/Screenshots"
 export LIBVIRT_DEFAULT_URI='qemu:///system'
 export EDITOR=nvim
+SYSTEMD_EDITOR=nvim
 export VISUAL=nvim
 export KUBE_EDITOR="nvim"
 # export KUBECONFIG=~/.kube/config:~/.kube/config-local:~/.kube/config-poddle-mvp
