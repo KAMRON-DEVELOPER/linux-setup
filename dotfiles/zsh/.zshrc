@@ -1,39 +1,73 @@
-setopt histignorealldups sharehistory
+# autocompletion
+autoload -Uz compinit
+compinit
+
+
+# enabling autocompletion of privileged environments in privileged commands
+zstyle ':completion::complete:*' gain-privileges 1
+
+# theme
+autoload -Uz promptinit
+promptinit
+# list available themes: prompt -l
+# preview available themes: prompt -p
+# set a theme: prompt walters
+
+
+if command -v some-tool-with-bash-completion >/dev/null; then
+  autoload -U +X bashcompinit && bashcompinit
+fi
+
+
+# Options to enhance history functionality
+setopt INC_APPEND_HISTORY    # Save history entries as soon as they are entered
+setopt SHARE_HISTORY         # Share history between different instances
+setopt HIST_IGNORE_ALL_DUPS  # Remove older duplicate entries from history
+setopt HIST_REDUCE_BLANKS    # Remove superfluous blanks from history items
+setopt HIST_IGNORE_SPACE     # Ignore commands starting with space
+# setopt histignorealldups sharehistory
+
 
 HISTSIZE=1000
 SAVEHIST=1000
 
+
 HISTFILE=~/.zsh_history
 
-################################### CUSTOM ###########################################
 
 # Bind Ctrl+Left to backward-word
 bindkey '^[[1;5D' backward-word
-
 # Bind Ctrl+Right to forward-word
 bindkey '^[[1;5C' forward-word
+
+
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
+# if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+#   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# fi
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # Powerlevel10k theme - check multiple installation locations
-if [[ -f /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]]; then
-  # Installed via package manager (yay/pacman)
-  source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-elif [[ -f ~/powerlevel10k/powerlevel10k.zsh-theme ]]; then
-  # Installed via git clone to home directory
-  source ~/powerlevel10k/powerlevel10k.zsh-theme
-elif [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
-  # Installed to XDG_DATA_HOME
-  source "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh-theme"
-fi
+# if [[ -f /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme ]]; then
+#   # Installed via package manager (yay/pacman)
+#   source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+# elif [[ -f ~/powerlevel10k/powerlevel10k.zsh-theme ]]; then
+#   # Installed via git clone to home directory
+#   source ~/powerlevel10k/powerlevel10k.zsh-theme
+# elif [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
+#   # Installed to XDG_DATA_HOME
+#   source "${XDG_DATA_HOME:-$HOME/.local/share}/powerlevel10k/powerlevel10k.zsh-theme"
+# fi
+
 
 # Zsh plugins
 if [[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
@@ -43,6 +77,7 @@ fi
 if [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
   source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
+
 
 # Rust
 if [[ -d "$HOME/.cargo/bin" ]]; then
@@ -93,7 +128,7 @@ if [[ -d "/usr/lib/jvm/java-17-openjdk" ]]; then
   export PATH="$JAVA_HOME/bin:$PATH"
 fi
 
-# Flutter 
+# Flutter
 if [[ -d "$HOME/flutter" ]]; then
   export PATH="$HOME/flutter/bin:$PATH"
   export PATH="$PATH":"$HOME/.pub-cache/bin"
@@ -104,12 +139,17 @@ if [[ -d "$HOME/Documents/linux-setup/kvm" ]]; then
   export PATH="$HOME/Documents/linux-setup/kvm:$PATH"
 fi
 
+# Load local secrets
+[[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
+
+
 # Git add, commit, push
 function acp() {
   git add .
   git commit -m "$1"
   git push
 }
+
 
 add-vault-config() {
   emulate -L zsh
@@ -182,15 +222,17 @@ EOF
   fi
 }
 
+
 alias k="kubectl"
+
 
 # Env vars
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_PICTURES_DIR="$HOME/Pictures/Screenshots"
 export HYPRSHOT_DIR="$HOME/Pictures/Screenshots"
-export LIBVIRT_DEFAULT_URI='qemu:///system'
+export LIBVIRT_DEFAULT_URI="qemu:///system"
 export EDITOR=nvim
-SYSTEMD_EDITOR=nvim
+export SYSTEMD_EDITOR=nvim
 export VISUAL=nvim
 export KUBE_EDITOR="nvim"
 # export KUBECONFIG=~/.kube/config:~/.kube/config-local:~/.kube/config-poddle-mvp
@@ -198,14 +240,11 @@ export _JAVA_AWT_WM_NONREPARENTING=1
 export GDK_BACKEND=wayland
 # export QT_QPA_PLATFORM=wayland
 
-# Load local secrets
-[[ -f "$HOME/.secrets" ]] && source "$HOME/.secrets"
-# if [[ -f "$HOME/.secrets" ]]; then
-#   source "$HOME/.secrets"
-# fi
 
-autoload -U +X bashcompinit && bashcompinit
-complete -o nospace -C /usr/bin/vault vault
-. $(pack-cli completion --shell zsh)
+# complete -o nospace -C /usr/bin/vault vault
 
-typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
+
+# . $(pack-cli completion --shell zsh)
+
+
+# typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet

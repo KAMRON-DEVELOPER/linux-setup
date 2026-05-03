@@ -1,0 +1,139 @@
+{
+  "mouse_wheel_zoom": true,
+  "preferred_line_length": 120,
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "git_panel": {
+    "dock": "left"
+  },
+  "diagnostics": {
+    "inline": {
+      "enabled": false
+    }
+  },
+  "toolbar": {
+    "code_actions": true,
+    "breadcrumbs": true
+  },
+  "scrollbar": {
+    "git_diff": false
+  },
+  "prettier": {
+    "allowed": false
+  },
+  "inlay_hints": {
+    "enabled": false
+  },
+  "session": {
+    "trust_all_worktrees": true
+  },
+  "title_bar": {
+    "show_menus": false,
+  },
+  "disable_ai": true,
+  "icon_theme": {
+    "mode": "dark",
+    "light": "Zed (Default)",
+    "dark": "Material Icon Theme"
+  },
+  "terminal": {
+    "env": {},
+    "font_size": 13.0,
+    "font_family": "JetBrainsMono Nerd Font",
+    "cursor_shape": "bar",
+    "blinking": "on",
+    "copy_on_select": true
+  },
+  "project_panel": {
+    "diagnostic_badges": true,
+    "dock": "right",
+    "auto_reveal_entries": false,
+    "auto_fold_dirs": false,
+    "sticky_scroll": false
+  },
+  "base_keymap": "VSCode",
+  "agent": {
+    "dock": "right",
+    "enabled": false,
+    "button": false,
+    "model_parameters": []
+  },
+  "tab_bar": {
+    "show": false
+  },
+  "tabs": {
+    "show_diagnostics": "all",
+    "git_status": false,
+    "show_close_button": "hidden"
+  },
+  "sticky_scroll": {
+    "enabled": false
+  },
+  "minimap": {
+    "current_line_highlight": "line",
+    "thumb_border": "none",
+    "thumb": "hover",
+    "show": "always",
+    "max_width_columns": 40
+  },
+  "cursor_blink": true,
+  "buffer_font_family": "JetBrainsMono Nerd Font",
+  "auto_indent_on_paste": true,
+  "use_on_type_format": true,
+  "wrap_guides": [
+    160
+  ],
+  "ui_font_size": 16,
+  "buffer_font_size": 11.0,
+  "theme": {
+    "mode": "dark",
+    "light": "GitHub Light Tritanopia",
+    "dark": "GitHub Dark"
+  },
+  "lsp": {
+    //   "pyrefly": {
+    //     "binary": {
+    //       "path": ".venv/bin/pyrefly",
+    //       "arguments": [
+    //         "lsp"
+    //       ]
+    //     }
+    //   }
+    "basedpyright": {
+      "binary": {
+        "path": ".venv/bin/basedpyright-langserver",
+        "arguments": [
+          "--stdio"
+        ]
+      }
+    }
+  },
+  "languages": {
+    "Markdown": {
+      "format_on_save": "on"
+    },
+    "Python": {
+      "language_servers": [
+        "basedpyright",
+        "ruff"
+      ],
+      "code_actions_on_format": {
+        "source.organizeImports.ruff": true
+      },
+      "formatter": {
+        "external": {
+          "command": "black",
+          "arguments": [
+            "--stdin-filename",
+            "{buffer_path}",
+            "-"
+          ]
+        }
+      },
+    },
+  }
+}

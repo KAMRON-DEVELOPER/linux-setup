@@ -1,0 +1,1 @@
+local window_size = { 400, 260 }

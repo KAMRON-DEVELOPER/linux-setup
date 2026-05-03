@@ -1,0 +1,67 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+
+[line_break]
+disabled = true
+
+[character]
+success_symbol = '[❯](bold green)'
+error_symbol = '[❯](bold red)'
+vimcmd_symbol = '[❮](bold purple)'
+
+
+format = """$os$directory$git_branch$git_status$c$python$nodejs$rust$golang$dart$character"""
+
+
+# [os]
+# disabled = true
+# style = 'bold white'
+# format = '[$symbol]($style) '
+
+# [os.symbols]
+# Arch = ' '
+# Ubuntu = ' '
+# Debian = ' '
+# Fedora = ' '
+# Linux = ' '
+# Macos = ' '
+# Windows = '󰍲 '
+
+# [package]
+# disabled = true
+
+# [directory]
+# style = 'bold cyan'
+# truncation_length = 3
+# truncate_to_repo = false
+
+# [c]
+# symbol = ' '
+# format = '[$symbol]($style)'
+# style = 'blue'
+#
+# [python]
+# symbol = ' '
+# format = '[$symbol]($style)'
+# style = 'yellow'
+#
+# [nodejs]
+# symbol = ' '
+# format = '[$symbol]($style)'
+# style = 'green'
+#
+# [rust]
+# symbol = '󱘗 '
+# format = '[$symbol]($style)'
+# style = 'red'
+#
+# [golang]
+# symbol = ' '
+# format = '[$symbol]($style)'
+# style = 'cyan'
+#
+# [dart]
+# symbol = ' '
+# format = '[$symbol]($style)'
+# style = 'blue'

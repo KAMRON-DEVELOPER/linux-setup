@@ -1,0 +1,38 @@
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      "shift shift": "file_finder::Toggle",
+    },
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-alt-f": "editor::Format"
+    }
+  },
+  {
+    "context": "(Editor && mode == full)",
+    "bindings": {
+      "ctrl-f": "buffer_search::Deploy"
+    }
+  },
+  {
+    "context": "Editor",
+    "unbind": {
+      "ctrl-shift-i": "editor::Format"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-alt-l": "terminal::Clear"
+    }
+  },
+  {
+    "context": "Terminal",
+    "unbind": {
+      "ctrl-shift-l": "terminal::Clear"
+    }
+  }
+]
